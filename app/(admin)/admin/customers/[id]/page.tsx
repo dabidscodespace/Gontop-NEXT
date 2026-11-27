@@ -20,7 +20,6 @@ import {
   Card,
   EmptyState,
   PageIdentity,
-  StatCard,
 } from "@/components/admin/ui";
 import { WorkspaceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
@@ -176,33 +175,45 @@ export default async function AdminCustomerDetailPage({
       )}
 
       {tab === "wallet" && (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.75fr)]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.75fr)]">
           <Card
             title="Wallet ledger"
             icon={ArrowDownUp}
             description="Deposits, order payments, refunds and admin adjustments are recorded in sequence and never edited in place."
             padded={false}
+            className="self-start overflow-hidden"
           >
             <TransactionList transactions={data.transactions} />
           </Card>
 
-          <div className="space-y-5">
-            <StatCard label="Current balance" value={formatBDT(data.balance)} hint={`${data.transactions.length} recent ledger entr${data.transactions.length === 1 ? "y" : "ies"}`} icon={Wallet} tone="emerald" />
-            {hasPermission(admin, "wallet.manage") ? (
-              <Card title="Balance controls" icon={ShieldCheck} description="Sensitive money movement opens in a protected review flow instead of living in the ledger.">
-                <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-600">Current customer balance</p>
-                  <p className="mt-1 text-2xl font-black tracking-tight text-emerald-950">{formatBDT(data.balance)}</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-700">Credits and debits are immutable, permission-gated and written to the audit trail.</p>
+          <Card
+            title={hasPermission(admin, "wallet.manage") ? "Wallet controls" : "Wallet access"}
+            icon={ShieldCheck}
+            description={hasPermission(admin, "wallet.manage") ? "Review the balance, then open a protected adjustment flow when needed." : "This ledger is available in read-only mode for your role."}
+            className="self-start"
+          >
+            <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-600">Current balance</p>
+                  <p className="mt-1 text-3xl font-black tracking-[-0.04em] text-emerald-950">{formatBDT(data.balance)}</p>
+                  <p className="mt-1 text-[11px] font-semibold text-emerald-700">{data.transactions.length} recent ledger entr{data.transactions.length === 1 ? "y" : "ies"}</p>
                 </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm ring-1 ring-inset ring-emerald-100">
+                  <Wallet className="h-4 w-4" />
+                </span>
+              </div>
+            </div>
+
+            {hasPermission(admin, "wallet.manage") ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-xs leading-relaxed text-gray-500">Credits and debits are immutable, permission-gated and written to the audit trail.</p>
                 <WalletAdjustmentModal userId={data.user.id} customerName={data.user.name || data.user.email} currentBalance={Number(data.balance)} />
-              </Card>
+              </div>
             ) : (
-              <Card title="Ledger protected" icon={ShieldCheck}>
-                <p className="text-sm leading-relaxed text-gray-600">You can review this history, but wallet-management permission is required to credit or debit the balance.</p>
-              </Card>
+              <p className="mt-4 text-sm leading-relaxed text-gray-600">Wallet-management permission is required to credit or debit this balance.</p>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </div>
