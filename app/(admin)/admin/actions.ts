@@ -138,6 +138,7 @@ export async function saveGameAction(_state: FormState, formData: FormData): Pro
     const game = await saveGame(input, id);
     await audit(admin.id, id ? "game.update" : "game.create", "game", game.id, { name: game.name });
     revalidatePath("/admin/games");
+    revalidatePath("/admin/categories");
     revalidatePath("/");
     updateTag("storefront");
     return { ok: true, message: id ? "Game updated." : "Game created." };
@@ -151,6 +152,7 @@ export async function deleteGameAction(_state: FormState, formData: FormData): P
     await deleteGame(id);
     await audit(admin.id, "game.delete", "game", id);
     revalidatePath("/admin/games");
+    revalidatePath("/admin/categories");
     revalidatePath("/");
     updateTag("storefront");
     return { ok: true, message: "Game deleted." };

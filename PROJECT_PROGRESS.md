@@ -197,3 +197,11 @@ Stages 1–5 implemented, migrations 0010–0011 additive and applied in tests, 
 - Package links and the post-create redirect now open `?tab=packages`; the selected workspace survives reloads and package selection. Tab controls are responsive, keyboard navigable, and the main workspace tabs remain visible while scrolling.
 - Removed redundant editor copy, including “Changes affect this package only,” and shortened package headings. Accidental imported hexadecimal hash suffixes are removed from package display names and from the editable value on the next save (for example, `1090-diamonds-<hash>` becomes `1090-diamonds`).
 - Verification: ESLint, TypeScript, production build, authenticated product/package route checks, selected-tab SSR checks, and `git diff --check` pass. All 252 tests remain green.
+
+## Admin catalogue follow-up: Categories and Popular Games
+- Removed the standalone Games item from admin navigation. `/admin/games` remains as a compatibility route and redirects old links (including edit links) into the Categories workspace; Quick Create opens the new game library directly.
+- Split Categories into two explicit top-level tabs: Product categories and Popular Games. Product categories now show only product assignment controls; Popular Games shows only the special parent-game card configuration, eliminating the former mixed “card type,” games, and products form.
+- Added Popular Games subtabs for Homepage section and Game library & regions. The homepage picker accepts top-level game cards only, marks families capable of opening the variants modal, and preserves existing regional assignments by mapping them to their parent card on the next save.
+- Rebuilt game management as a grouped library inside Popular Games: each top-level card owns its regional variants, product counts and state are visible together, and the add/edit form clearly distinguishes a Popular game card from a regional modal variant.
+- Existing category/game validation, deletion protections, product relationships, modal storefront behavior, permissions, audit logs, and storefront revalidation remain unchanged.
+- Verification: ESLint, TypeScript, production build, authenticated HTTP checks for both category tabs and both Popular Games subtabs, legacy Games-route redirect checks, and `git diff --check` pass. All 252 tests remain green.

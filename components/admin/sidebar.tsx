@@ -86,20 +86,12 @@ const NAV_GROUPS: NavGroup[] = [
         keywords: "catalogue sku package variation",
       },
       {
-        href: "/admin/games",
-        label: "Games",
-        description: "Games and regional variants",
-        icon: Gamepad2,
-        permission: "categories.manage",
-        keywords: "catalogue region",
-      },
-      {
         href: "/admin/categories",
         label: "Categories",
-        description: "Homepage collections",
+        description: "Product sections and Popular Games",
         icon: LayoutGrid,
         permission: "categories.manage",
-        keywords: "homepage collection section",
+        keywords: "homepage collection section popular games region modal",
       },
       {
         href: "/admin/topup-methods",
@@ -570,7 +562,7 @@ function QuickCreate({ admin }: { admin: SessionAdmin }) {
       ? { href: "/admin/products/new", label: "New product", icon: Package }
       : null,
     hasPermission(admin, "categories.manage")
-      ? { href: "/admin/games", label: "New game", icon: Gamepad2 }
+      ? { href: "/admin/categories?tab=popular&view=library", label: "New game", icon: Gamepad2 }
       : null,
     hasPermission(admin, "banners.manage")
       ? { href: "/admin/banners", label: "New banner", icon: ImageIcon }
