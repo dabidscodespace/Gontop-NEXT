@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Gamepad2, LayoutGrid, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { ActionForm } from "@/components/action-form";
+import { CategoryProductPicker } from "@/components/admin/category-product-picker";
 import { GameLibrary } from "@/components/admin/game-library";
 import { NoAccess } from "@/components/admin/no-access";
 import {
@@ -128,7 +129,7 @@ function PopularTabs({ active }: { active: string }) {
 
 function ProductCategories({ categories, products, editing }: { categories: Categories; products: Products; editing: Category | null | undefined }) {
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)]">
       <CategoryList
         title="Product categories"
         icon={LayoutGrid}
@@ -138,39 +139,39 @@ function ProductCategories({ categories, products, editing }: { categories: Cate
         emptyTitle="No product categories"
         itemLabel={(category) => `${category.productIds.length} product${category.productIds.length === 1 ? "" : "s"}`}
         newHref={editing ? "/admin/categories" : undefined}
+        editActionLabel="Manage"
       />
 
-      <Card title={editing ? "Edit category" : "New category"} icon={editing ? Pencil : Plus}>
-        <ActionForm action={saveCategoryAction} submitLabel={editing ? "Save category" : "Create category"} className="space-y-4">
+      <Card
+        title={editing ? `Manage ${editing.name}` : "Create product category"}
+        description={editing ? "Update category details, membership and storefront product order." : "Define the category, then choose products from the searchable catalogue."}
+        icon={editing ? Pencil : Plus}
+      >
+        <ActionForm key={editing?.id ?? "new"} action={saveCategoryAction} submitLabel={editing ? "Save category" : "Create category"} className="space-y-6">
           {editing && <input type="hidden" name="id" value={editing.id} />}
           <input type="hidden" name="layout" value="products" />
           <input type="hidden" name="gameLimit" value="0" />
-          <Field label="Name">
-            <input name="name" defaultValue={editing?.name ?? ""} required className={inputCls} />
-          </Field>
-          <Field label="Slug" hint="Leave blank to generate it.">
-            <input name="slug" defaultValue={editing?.slug ?? ""} className={inputCls} />
-          </Field>
-          <ImageField label="Category image" name="image" defaultValue={editing?.image ?? ""} />
-          <Field label="Products">
-            {products.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-gray-200 p-4 text-center text-xs text-gray-500">No products available.</p>
-            ) : (
-              <div className="max-h-80 space-y-1 overflow-y-auto rounded-xl border border-gray-200 p-2">
-                {products.map((product) => (
-                  <label key={product.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition hover:bg-gray-50">
-                    <input type="checkbox" name="productIds" value={product.id} defaultChecked={editing?.productIds.includes(product.id) ?? false} className="h-4 w-4 shrink-0 accent-orange-500" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold text-gray-800">{product.name}</span>
-                      <span className="block truncate text-[11px] text-gray-400">{product.gameName}</span>
-                    </span>
-                    {product.availability === "disabled" && <span className="text-[10px] font-bold text-gray-400">Disabled</span>}
-                  </label>
-                ))}
-              </div>
-            )}
-          </Field>
-          <CategoryFooterFields editing={editing} showLimit={false} />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Name">
+              <input name="name" defaultValue={editing?.name ?? ""} required className={inputCls} />
+            </Field>
+            <Field label="Slug" hint="Leave blank to generate it.">
+              <input name="slug" defaultValue={editing?.slug ?? ""} className={inputCls} />
+            </Field>
+            <div className="md:col-span-2">
+              <ImageField label="Category image" name="image" defaultValue={editing?.image ?? ""} />
+            </div>
+          </div>
+
+          <CategoryProductPicker
+            products={products}
+            initialSelectedIds={editing?.productIds ?? []}
+          />
+
+          <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+            <CategoryFooterFields editing={editing} showLimit={false} />
+          </div>
         </ActionForm>
       </Card>
     </div>
@@ -248,6 +249,7 @@ function CategoryList({
   emptyTitle,
   itemLabel,
   newHref,
+  editActionLabel,
 }: {
   title: string;
   icon: typeof LayoutGrid;
@@ -257,6 +259,7 @@ function CategoryList({
   emptyTitle: string;
   itemLabel: (category: Category) => string;
   newHref?: string;
+  editActionLabel?: string;
 }) {
   return (
     <Card
@@ -283,7 +286,7 @@ function CategoryList({
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <CategoryStatus category={category} />
                 <div className="flex items-center gap-0.5">
-                  <Link href={editHref(category.id)} aria-label={`Edit ${category.name}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white hover:text-accent-orange"><Pencil className="h-4 w-4" /></Link>
+                  <Link href={editHref(category.id)} aria-label={`Edit ${category.name}`} className={cn("flex h-9 items-center justify-center gap-1.5 rounded-lg text-gray-500 transition hover:bg-white hover:text-accent-orange", editActionLabel ? "px-3 text-[11px] font-black" : "w-9")}><Pencil className="h-3.5 w-3.5" />{editActionLabel}</Link>
                   <ActionForm action={deleteCategoryAction} submitLabel="Delete" confirm={`Delete ${category.name}? Assigned items are not deleted.`} hideButton>
                     <input type="hidden" name="id" value={category.id} />
                     <button type="submit" aria-label={`Delete ${category.name}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>

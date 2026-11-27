@@ -188,7 +188,11 @@ export async function saveCategoryAction(_state: FormState, formData: FormData):
     revalidatePath("/admin/categories");
     revalidatePath("/");
     updateTag("storefront");
-    return { ok: true, message: id ? "Category updated." : "Category created." };
+    return {
+      ok: true,
+      message: id ? "Category updated." : "Category created.",
+      redirectTo: id ? undefined : `/admin/categories?edit=${category.id}`,
+    };
   });
 }
 

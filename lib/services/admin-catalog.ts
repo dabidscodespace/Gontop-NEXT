@@ -190,6 +190,7 @@ export async function listProductOptions() {
     .select({
       id: products.id,
       name: products.name,
+      image: products.image,
       status: products.status,
       availability: products.availability,
       gameName: games.name,
