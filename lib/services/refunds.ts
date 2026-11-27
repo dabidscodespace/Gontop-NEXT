@@ -411,7 +411,7 @@ export async function adminRefundableOrders(limit = 20) {
       status: orders.status,
     })
     .from(orders)
-    .where(inArray(orders.status, ["paid", "processing", "completed", "failed", "on_hold", "cancelled"]))
+    .where(inArray(orders.status, ["processing", "completed", "failed", "on_hold", "cancelled"]))
     .orderBy(orders.createdAt)
     .limit(limit);
 }

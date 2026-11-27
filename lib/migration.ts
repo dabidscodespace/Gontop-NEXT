@@ -331,7 +331,8 @@ export async function importCustomers(text: string): Promise<MigrationResult> {
 const STATUS_MAP: Record<string, OrderStatus | "skip"> = {
   pending: "pending_payment",
   "pending-payment": "pending_payment",
-  paid: "paid",
+  // WooCommerce's paid state means payment is received and fulfillment can start.
+  paid: "processing",
   "on-hold": "on_hold",
   onhold: "on_hold",
   processing: "processing",
@@ -659,7 +660,7 @@ function normalizeOrders(rows: CsvRow[]) {
       pickGroup(rowsInGroup, ["completed_date", "date_completed"]),
     );
     const createdAt = orderDate ?? new Date();
-    const isPaid = ["paid", "processing", "completed", "refunded", "on_hold"].includes(status);
+    const isPaid = ["processing", "completed", "refunded", "on_hold"].includes(status);
 
     if (!orderDate) warnings.push(`Order ${group.key} has no valid date; import time was used.`);
     if (!email || !isEmail(email)) {

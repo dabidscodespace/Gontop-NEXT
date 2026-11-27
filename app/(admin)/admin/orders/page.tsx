@@ -27,7 +27,6 @@ export const dynamic = "force-dynamic";
 const FILTERS: Array<OrderStatus | "all"> = [
   "all",
   "pending_payment",
-  "paid",
   "processing",
   "completed",
   "failed",

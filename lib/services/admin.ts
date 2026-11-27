@@ -33,7 +33,7 @@ export async function getDashboardStats() {
           paidOrders: count(),
         })
         .from(orders)
-        .where(inArray(orders.status, ["paid", "processing", "completed", "on_hold"])),
+        .where(inArray(orders.status, ["processing", "completed", "on_hold"])),
       db
         .select({
           todayOrders: count(),
@@ -95,7 +95,7 @@ export async function getDashboardStats() {
         .where(
           and(
             gte(orders.createdAt, new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)),
-            inArray(orders.status, ["paid", "processing", "completed", "on_hold"]),
+            inArray(orders.status, ["processing", "completed", "on_hold"]),
           ),
         )
         .groupBy(sql`date_trunc('day', ${orders.createdAt})`)
@@ -212,7 +212,7 @@ export async function getReports() {
         orders: count(),
       })
       .from(orders)
-      .where(inArray(orders.status, ["paid", "processing", "completed", "on_hold"])),
+      .where(inArray(orders.status, ["processing", "completed", "on_hold"])),
     db
       .select({
         method: payments.gateway,
@@ -230,7 +230,7 @@ export async function getReports() {
       })
       .from(orderItems)
       .innerJoin(orders, eq(orders.id, orderItems.orderId))
-      .where(inArray(orders.status, ["paid", "processing", "completed", "on_hold"]))
+      .where(inArray(orders.status, ["processing", "completed", "on_hold"]))
       .groupBy(orderItems.productName)
       .orderBy(sql`sum(${orderItems.lineTotal}) desc`)
       .limit(8),
@@ -241,7 +241,7 @@ export async function getReports() {
         orders: count(),
       })
       .from(orders)
-      .where(inArray(orders.status, ["paid", "processing", "completed", "on_hold"]))
+      .where(inArray(orders.status, ["processing", "completed", "on_hold"]))
       .groupBy(sql`date_trunc('month', ${orders.createdAt})`)
       .orderBy(sql`date_trunc('month', ${orders.createdAt}) desc`)
       .limit(6),

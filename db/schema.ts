@@ -52,7 +52,6 @@ export type Role = "owner" | "moderator";
 
 export const ORDER_STATUSES = [
   "pending_payment",
-  "paid",
   "processing",
   "completed",
   "failed",

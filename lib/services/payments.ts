@@ -183,7 +183,7 @@ export async function verifyInvoice(
     );
   }
 
-  let newlyPaidOrderId = null as number | null;
+  let processingOrderId = null as number | null;
   const committed = await db.transaction(async (tx) => {
     const [payment] = await tx
       .select()
@@ -276,28 +276,36 @@ export async function verifyInvoice(
     if (order.status === "pending_payment") {
       await tx
         .update(orders)
-        .set({ status: "paid", paymentStatus: "paid", paidAt: new Date(), updatedAt: new Date() })
+        .set({
+          status: "processing",
+          paymentStatus: "paid",
+          fulfillmentStatus: "processing",
+          paidAt: new Date(),
+          updatedAt: new Date(),
+        })
         .where(eq(orders.id, order.id));
-      newlyPaidOrderId = order.id;
+      processingOrderId = order.id;
 
       await tx.insert(orderHistory).values({
         orderId: order.id,
         fromStatus: order.status,
-        toStatus: "paid",
+        toStatus: "processing",
         changedByType: "system",
-        note: `Verified payment ${result.transactionId ?? payment.invoiceId ?? ""}`.trim(),
+        note: `Payment verified${result.transactionId || payment.invoiceId ? `: ${result.transactionId ?? payment.invoiceId}` : ""}. Processing started.`,
+        customerVisible: true,
       });
     }
 
     return {
       status: "COMPLETED" as const,
       orderPublicId: order.publicId,
-      orderStatus: "paid" as const,
+      orderStatus: order.status === "pending_payment" ? ("processing" as const) : order.status,
     };
   });
 
-  if (newlyPaidOrderId) await startProcessingAfterPayment(newlyPaidOrderId);
-  return committed;
+  if (!processingOrderId) return committed;
+  const orderStatus = await startProcessingAfterPayment(processingOrderId);
+  return { ...committed, orderStatus };
 }
 
 export async function expireStaleInvoices(userId: string) {

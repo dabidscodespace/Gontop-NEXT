@@ -9,7 +9,6 @@ export const TERMINAL_STATUSES: OrderStatus[] = ["completed", "cancelled", "refu
 
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending_payment: ["cancelled", "failed"],
-  paid: ["processing", "completed", "failed", "on_hold"],
   processing: ["completed", "failed", "on_hold"],
   on_hold: ["processing", "failed"],
   // Retry: a failed fulfillment of a paid order can be started again.
@@ -21,7 +20,6 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending_payment: "Pending Payment",
-  paid: "Paid",
   processing: "Processing",
   completed: "Completed",
   failed: "Failed",

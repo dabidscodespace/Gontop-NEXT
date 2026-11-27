@@ -302,7 +302,6 @@ export const statusSchema = z.object({
   orderId: z.coerce.number().int().positive(),
   status: z.enum([
     "pending_payment",
-    "paid",
     "processing",
     "completed",
     "failed",

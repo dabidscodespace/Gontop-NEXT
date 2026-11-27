@@ -6,11 +6,6 @@ const STYLES: Record<string, { label: string; className: string; dot: string }> 
     className: "bg-amber-50 text-amber-700 ring-amber-200",
     dot: "bg-amber-500",
   },
-  paid: {
-    label: "Paid",
-    className: "bg-blue-50 text-blue-700 ring-blue-200",
-    dot: "bg-blue-500",
-  },
   processing: {
     label: "Processing",
     className: "bg-indigo-50 text-indigo-700 ring-indigo-200",

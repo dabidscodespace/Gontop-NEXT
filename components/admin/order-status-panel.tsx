@@ -9,7 +9,7 @@ import type { OrderStatus } from "@/db/schema";
 import { btnPrimary, inputCls, selectCls } from "@/components/admin/ui";
 
 // Every status an admin can set directly. Refunded is set only by the refund workflow.
-const STATUSES: OrderStatus[] = ["pending_payment", "paid", "processing", "completed", "on_hold", "cancelled", "failed"];
+const STATUSES: OrderStatus[] = ["pending_payment", "processing", "completed", "on_hold", "cancelled", "failed"];
 
 const TONE: Record<string, string> = {
   processing: "bg-blue-600 hover:bg-blue-700",

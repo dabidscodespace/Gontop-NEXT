@@ -210,7 +210,9 @@ export async function createOrder(userId: string, input: CheckoutInput) {
   }
 
   const gatewayPortion = round2(subtotal - walletPortion);
-  const status: OrderStatus = gatewayPortion === 0 ? "paid" : "pending_payment";
+  // Payment is tracked separately. A fully paid order enters Processing
+  // immediately; there is no intermediate lifecycle status named "Paid".
+  const status: OrderStatus = gatewayPortion === 0 ? "processing" : "pending_payment";
   const publicId = newOrderPublicId();
 
   const result = await db.transaction(async (tx) => {
@@ -269,7 +271,7 @@ export async function createOrder(userId: string, input: CheckoutInput) {
         userId,
         status,
         paymentStatus: gatewayPortion === 0 ? "paid" : "pending",
-        fulfillmentStatus: "pending",
+        fulfillmentStatus: gatewayPortion === 0 ? "processing" : "pending",
         subtotal: subtotal.toFixed(2),
         total: subtotal.toFixed(2),
         walletAmount: walletPortion.toFixed(2),
@@ -330,7 +332,10 @@ export async function createOrder(userId: string, input: CheckoutInput) {
       toStatus: status,
       byType: "customer",
       byId: userId,
-      note: status === "paid" ? "Paid with wallet" : "Order placed, awaiting payment",
+      note:
+        status === "processing"
+          ? "Paid with wallet. Processing started."
+          : "Order placed, awaiting payment.",
     });
 
     return {
@@ -343,7 +348,7 @@ export async function createOrder(userId: string, input: CheckoutInput) {
     };
   });
 
-  if (result.status === "paid") {
+  if (result.status === "processing") {
     return { ...result, status: await startProcessingAfterPayment(result.orderId) };
   }
   return result;
@@ -606,30 +611,35 @@ async function applyOrderStatusChange(input: {
 }
 
 /**
- * Called after a payment is committed. Moves the order to Processing and starts
- * automatic fulfillment if a provider is configured. Without a provider the
- * order stays in Processing until an admin completes it. Failures are logged,
- * not thrown, because the payment itself has already succeeded.
+ * Called after payment has atomically moved an order to Processing. It starts
+ * automatic fulfillment when configured; otherwise the order remains in
+ * Processing until an admin completes it. Fulfillment failures are recorded on
+ * the order and never roll back a payment that has already succeeded.
  */
 export async function startProcessingAfterPayment(orderId: number): Promise<OrderStatus> {
+  const db = await getDb();
   try {
-    const { order, changed } = await applyOrderStatusChange({
-      orderId,
-      status: "processing",
-      adminId: null,
-      note: "Payment received. Processing started.",
-      customerVisible: true,
-    });
+    const [order] = await db
+      .select({ id: orders.id, status: orders.status, paidAt: orders.paidAt })
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    if (!order) throw new AppError("Order not found.", 404);
+
     const provider = getFulfillmentProvider();
-    if (changed && provider.automatic) {
+    if (order.status === "processing" && order.paidAt && provider.automatic) {
       await runAutomaticFulfillment(order.id, provider, null);
     }
   } catch (error) {
     console.error(`Automatic processing failed for order ${orderId}`, error);
   }
-  const db = await getDb();
-  const [current] = await db.select({ status: orders.status }).from(orders).where(eq(orders.id, orderId)).limit(1);
-  return current?.status ?? "paid";
+
+  const [current] = await db
+    .select({ status: orders.status })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+  return current?.status ?? "pending_payment";
 }
 
 /**

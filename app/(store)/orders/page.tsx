@@ -21,10 +21,10 @@ export default async function OrdersPage() {
 
   const orders = await getUserOrders(user.id);
   const active = orders.filter((order) =>
-    ["pending_payment", "paid", "processing", "on_hold"].includes(order.status),
+    ["pending_payment", "processing", "on_hold"].includes(order.status),
   );
   const past = orders.filter(
-    (order) => !["pending_payment", "paid", "processing", "on_hold"].includes(order.status),
+    (order) => !["pending_payment", "processing", "on_hold"].includes(order.status),
   );
 
   return (

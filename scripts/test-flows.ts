@@ -70,6 +70,12 @@ async function main() {
       !hasPermission({ role: "moderator", permissions: ["orders.view"] }, "refunds.process"),
   );
 
+  console.log("\n▸ Order lifecycle");
+  check(
+    "paid is a payment state, not an order status",
+    !(schema.ORDER_STATUSES as readonly string[]).includes("paid"),
+  );
+
   console.log("\n▸ Fixtures");
   const [game] = await db
     .insert(schema.games)
@@ -642,7 +648,10 @@ async function main() {
   check("on hold cannot be cancelled", !ORDER_TRANSITIONS.on_hold.includes("cancelled"));
   check("pending payment can fail", ORDER_TRANSITIONS.pending_payment.includes("failed"));
   check("refunded is not a manual target", !Object.values(ORDER_TRANSITIONS).some((targets) => targets.includes("refunded")));
-  check("payment-only states leave fulfillment alone", fulfillmentStatusFor("paid") === null && fulfillmentStatusFor("refunded") === null);
+  check(
+    "payment-only states leave fulfillment alone",
+    fulfillmentStatusFor("pending_payment") === null && fulfillmentStatusFor("refunded") === null,
+  );
 
   console.log("\n▸ Automatic fulfillment");
   const { registerFulfillmentProvider } = await import("../lib/fulfillment");
