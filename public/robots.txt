@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /about
+
+Disallow: /account
+Disallow: /orders
+Disallow: /wallet
+Disallow: /checkout/
+
+Sitemap: https://gontop.app/sitemap.xml

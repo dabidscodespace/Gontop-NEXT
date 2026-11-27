@@ -1,0 +1,71 @@
+"use client";
+
+import { useActionState } from "react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+
+import { EMPTY_FORM_STATE, type FormState } from "@/lib/action-types";
+import { cn } from "@/lib/utils";
+
+type Action = (state: FormState, formData: FormData) => Promise<FormState>;
+
+export function ActionForm({
+  action,
+  children,
+  submitLabel,
+  className,
+  buttonClassName,
+  confirm,
+  hideButton,
+}: {
+  action: Action;
+  children: React.ReactNode;
+  submitLabel: string;
+  className?: string;
+  buttonClassName?: string;
+  confirm?: string;
+  hideButton?: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
+
+  return (
+    <form
+      action={formAction}
+      className={className}
+      onSubmit={(event) => {
+        if (confirm && !window.confirm(confirm)) event.preventDefault();
+      }}
+    >
+      {children}
+
+      {state.error && (
+        <p
+          role="alert"
+          className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700"
+        >
+          <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" />
+          {state.error}
+        </p>
+      )}
+      {state.message && (
+        <p className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
+          <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0" />
+          {state.message}
+        </p>
+      )}
+
+      {!hideButton && (
+        <button
+          type="submit"
+          disabled={pending}
+          className={cn(
+            "mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-accent-orange px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
+            buttonClassName,
+          )}
+        >
+          {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {pending ? "Saving..." : submitLabel}
+        </button>
+      )}
+    </form>
+  );
+}

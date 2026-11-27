@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "products_sku_normalized_unique" ON "products" USING btree (lower(btrim("sku"))) WHERE "products"."sku" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "variations_sku_normalized_unique" ON "variations" USING btree (lower(btrim("sku"))) WHERE "variations"."sku" is not null;
