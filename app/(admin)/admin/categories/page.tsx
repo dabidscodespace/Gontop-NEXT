@@ -44,6 +44,7 @@ export default async function AdminCategoriesPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Storefront merchandising"
         title="Categories"
         description="Homepage sections. Popular Games cards open a game’s variants; product sections link straight to each product page."
         actions={

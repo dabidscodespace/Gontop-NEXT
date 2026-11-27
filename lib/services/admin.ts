@@ -127,7 +127,11 @@ export async function getCustomers(input: { search?: string; page?: number; page
   const pageSize = Math.min(50, Math.max(10, input.pageSize ?? 20));
   const search = input.search?.trim();
   const where = search
-    ? or(ilike(users.email, `%${search}%`), ilike(users.name, `%${search}%`))
+    ? or(
+        ilike(users.email, `%${search}%`),
+        ilike(users.name, `%${search}%`),
+        ilike(users.phone, `%${search}%`),
+      )
     : undefined;
 
   const [rows, totalRows] = await Promise.all([

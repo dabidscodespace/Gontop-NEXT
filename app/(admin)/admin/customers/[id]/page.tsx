@@ -32,6 +32,7 @@ export default async function AdminCustomerDetailPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Customer profile"
         back={{ href: "/admin/customers", label: "Customers" }}
         title={data.user.name || "Unnamed customer"}
         description={data.user.email}

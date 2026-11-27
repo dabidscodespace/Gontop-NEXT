@@ -35,6 +35,7 @@ export default async function AdminAdminsPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Access control"
         title="Admins & moderators"
         description="Only the owner can create staff and change permissions."
         actions={

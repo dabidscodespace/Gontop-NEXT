@@ -159,3 +159,78 @@
   max-width: 100%;
   height: auto;
 }
+
+/* Admin workspace --------------------------------------------------------- */
+.admin-app {
+  --admin-ink: #151515;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 82% -10%, rgba(249, 96, 0, 0.045), transparent 24rem),
+    #f6f6f7;
+}
+
+.admin-app * {
+  scrollbar-color: #d1d5db transparent;
+  scrollbar-width: thin;
+}
+
+.admin-scrollbar::-webkit-scrollbar,
+.admin-app *::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track,
+.admin-app *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb,
+.admin-app *::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #c7c9ce;
+  background-clip: padding-box;
+}
+
+.admin-app ::selection {
+  background: rgba(249, 96, 0, 0.18);
+  color: #151515;
+}
+
+.admin-app form[data-pending="true"] button[type="submit"] {
+  pointer-events: none;
+  opacity: 0.62;
+}
+
+.admin-app table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+@keyframes admin-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-app main > div > * {
+  animation: admin-enter 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-app *,
+  .admin-app *::before,
+  .admin-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

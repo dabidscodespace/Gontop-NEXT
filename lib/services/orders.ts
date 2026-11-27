@@ -755,6 +755,40 @@ export async function listFulfillmentAttempts(orderId: number) {
     .orderBy(desc(fulfillmentAttempts.createdAt));
 }
 
+function adminOrderSearchCondition(rawSearch?: string) {
+  const search = rawSearch?.trim();
+  if (!search) return undefined;
+
+  const pattern = `%${search}%`;
+  const exactOrderNumber = /^\d+$/.test(search) && Number.isSafeInteger(Number(search));
+  return sql`(
+    ${orders.publicId} ilike ${pattern}
+    or ${exactOrderNumber ? sql`${orders.orderNumber} = ${Number(search)}` : sql`false`}
+    or ${users.email} ilike ${pattern}
+    or coalesce(${users.name}, '') ilike ${pattern}
+    or coalesce(${users.phone}, '') ilike ${pattern}
+    or cast(${orders.playerFields} as text) ilike ${pattern}
+    or exists (
+      select 1 from ${orderItems} oi
+      where oi.order_id = ${orders.id}
+      and (
+        oi.product_name ilike ${pattern}
+        or coalesce(oi.sku, '') ilike ${pattern}
+        or cast(oi.imported_data as text) ilike ${pattern}
+      )
+    )
+    or exists (
+      select 1 from ${payments} p
+      where p.order_id = ${orders.id}
+      and (
+        coalesce(p.transaction_id, '') ilike ${pattern}
+        or coalesce(p.sender_number, '') ilike ${pattern}
+        or coalesce(p.invoice_id, '') ilike ${pattern}
+      )
+    )
+  )`;
+}
+
 export async function getAdminOrders(filters: {
   status?: OrderStatus | "all";
   paymentStatus?: OrderPaymentStatus | "all";
@@ -777,15 +811,8 @@ export async function getAdminOrders(filters: {
   if (filters.fulfillmentStatus && filters.fulfillmentStatus !== "all") {
     conditions.push(eq(orders.fulfillmentStatus, filters.fulfillmentStatus));
   }
-  const search = filters.search?.trim();
-  if (search) {
-    conditions.push(
-      sql`(${orders.publicId} ilike ${`%${search}%`} or ${/^\d+$/.test(search) ? sql`${orders.orderNumber} = ${Number(search)}` : sql`false`} or exists (
-        select 1 from ${orderItems} oi where oi.order_id = ${orders.id}
-        and oi.product_name ilike ${`%${search}%`}
-      ))`,
-    );
-  }
+  const searchCondition = adminOrderSearchCondition(filters.search);
+  if (searchCondition) conditions.push(searchCondition);
 
   const where = conditions.length ? and(...conditions) : undefined;
 
@@ -831,7 +858,11 @@ export async function getAdminOrders(filters: {
       .orderBy(desc(orders.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ value: count() }).from(orders).where(where),
+    db
+      .select({ value: count() })
+      .from(orders)
+      .innerJoin(users, eq(users.id, orders.userId))
+      .where(where),
   ]);
 
   return {
@@ -843,11 +874,13 @@ export async function getAdminOrders(filters: {
   };
 }
 
-export async function getOrderStatusCounts() {
+export async function getOrderStatusCounts(search?: string) {
   const db = await getDb();
   const rows = await db
     .select({ status: orders.status, value: count() })
     .from(orders)
+    .innerJoin(users, eq(users.id, orders.userId))
+    .where(adminOrderSearchCondition(search))
     .groupBy(orders.status);
   const counts: Record<string, number> = {};
   let all = 0;

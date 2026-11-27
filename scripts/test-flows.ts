@@ -39,7 +39,7 @@ async function main() {
   const { registerUser } = await import("../lib/services/auth");
   const { applyWalletEntry, getWalletBalance } = await import("../lib/services/wallet");
   const { eq } = await import("drizzle-orm");
-  const { createOrder, cancelUnpaidOrder, updateOrderStatus, getOrderWithDetails } = await import(
+  const { createOrder, cancelUnpaidOrder, updateOrderStatus, getOrderWithDetails, getAdminOrders, getOrderStatusCounts } = await import(
     "../lib/services/orders"
   );
   const { refundOrder, getOrderRefundSummary, resolvePendingGatewayRefund, countPendingGatewayRefunds } = await import("../lib/services/refunds");
@@ -157,6 +157,26 @@ async function main() {
   const walletDetails = await getOrderWithDetails(walletOrder.publicId);
   check("player fields are snapshotted with labels", walletDetails?.order.playerFields["Player ID"] === "123456");
   check("order history recorded", (walletDetails?.history.length ?? 0) >= 1);
+
+  console.log("\n▸ Admin order search");
+  for (const [label, term] of [
+    ["customer name", "Test Customer"],
+    ["customer email", "test@example.com"],
+    ["customer phone", "01700000000"],
+    ["player ID", "123456"],
+    ["product", "MLBB Diamonds"],
+    ["SKU", "MLBB-100"],
+  ] as const) {
+    const result = await getAdminOrders({ search: term });
+    check(`search finds an order by ${label}`, result.rows.some((row) => row.id === walletOrder.orderId));
+  }
+  const noSearchResult = await getAdminOrders({ search: "definitely-not-an-order" });
+  check("search count uses the same filters", noSearchResult.total === 0 && noSearchResult.rows.length === 0);
+  const searchedStatusCounts = await getOrderStatusCounts("Test Customer");
+  check(
+    "status tabs use the same search",
+    searchedStatusCounts.all === 1 && searchedStatusCounts.counts.processing === 1,
+  );
 
   console.log("\n▸ Validation");
   await expectError(

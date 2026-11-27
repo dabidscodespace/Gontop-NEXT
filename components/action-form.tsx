@@ -31,8 +31,10 @@ export function ActionForm({
     <form
       action={formAction}
       className={className}
+      aria-busy={pending}
+      data-pending={pending ? "true" : "false"}
       onSubmit={(event) => {
-        if (confirm && !window.confirm(confirm)) event.preventDefault();
+        if (pending || (confirm && !window.confirm(confirm))) event.preventDefault();
       }}
     >
       {children}
@@ -47,7 +49,7 @@ export function ActionForm({
         </p>
       )}
       {state.message && (
-        <p className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
+        <p aria-live="polite" className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
           <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0" />
           {state.message}
         </p>

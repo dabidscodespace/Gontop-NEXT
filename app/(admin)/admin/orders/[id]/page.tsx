@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Mail, Phone, ShieldCheck, ShoppingBag } from "lucide-react";
 
 import {
   refundAction,
@@ -13,6 +13,7 @@ import {
 import { ActionForm } from "@/components/action-form";
 import {
   Card,
+  PageHeader,
   inputCls,
   selectCls,
   tdCls,
@@ -163,17 +164,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-5">
-      <Card padded={false}>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-          <div>
-            <h1 className="text-xl font-extrabold text-gray-900">Order #{order.orderNumber}</h1>
-            <p className="mt-1 inline-flex flex-wrap items-center gap-2 font-mono text-xs text-gray-500">
-              {order.publicId}
-              <CopyButton value={order.publicId} />
-            </p>
-          </div>
-          <StatusBadge status={order.status} />
-        </div>
+      <PageHeader
+        eyebrow="Order workspace"
+        back={{ href: "/admin/orders", label: "Orders" }}
+        title={
+          <span className="inline-flex items-center gap-2">
+            Order #{order.orderNumber}
+            <CopyButton value={String(order.orderNumber)} compact label="Copy order number" />
+          </span>
+        }
+        description={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span className="font-mono">{order.publicId}</span>
+            <CopyButton value={order.publicId} compact label="Copy public order ID" />
+            <span className="text-gray-300">·</span>
+            Placed {dateTime(order.createdAt)}
+          </span>
+        }
+        actions={<StatusBadge status={order.status} className="px-3 py-1.5" />}
+      />
+
+      <Card title="Order overview" icon={ShoppingBag} padded={false}>
         <dl className="px-5 py-1">
           <Row label="Customer">
             <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">

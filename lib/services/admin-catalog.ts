@@ -19,6 +19,7 @@ import {
   variations,
   wallets,
   adminUsers,
+  type PaymentStatus,
 } from "@/db/schema";
 import {
   AVAILABILITY_STATUSES,
@@ -1174,10 +1175,30 @@ export async function deleteBanner(id: number) {
   await db.delete(banners).where(eq(banners.id, id));
 }
 
-export async function listPaymentsAdmin(input: { page?: number }) {
+export async function listPaymentsAdmin(input: {
+  page?: number;
+  search?: string;
+  status?: PaymentStatus | "all";
+}) {
   const db = await getDb();
   const page = Math.max(1, input.page ?? 1);
   const pageSize = 25;
+  const conditions = [];
+  if (input.status && input.status !== "all") conditions.push(eq(payments.status, input.status));
+  const search = input.search?.trim();
+  if (search) {
+    const pattern = `%${search}%`;
+    conditions.push(
+      or(
+        ilike(users.email, pattern),
+        ilike(users.name, pattern),
+        ilike(payments.invoiceId, pattern),
+        ilike(payments.transactionId, pattern),
+        ilike(payments.senderNumber, pattern),
+      ),
+    );
+  }
+  const where = conditions.length ? and(...conditions) : undefined;
 
   const [rows, totalRows] = await Promise.all([
     db
@@ -1190,29 +1211,42 @@ export async function listPaymentsAdmin(input: { page?: number }) {
         status: payments.status,
         paymentMethod: payments.paymentMethod,
         transactionId: payments.transactionId,
+        senderNumber: payments.senderNumber,
         createdAt: payments.createdAt,
         customerEmail: users.email,
+        customerName: users.name,
       })
       .from(payments)
       .innerJoin(users, eq(users.id, payments.userId))
+      .where(where)
       .orderBy(desc(payments.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ value: count() }).from(payments),
+    db.select({ value: count() }).from(payments).innerJoin(users, eq(users.id, payments.userId)).where(where),
   ]);
 
+  const total = Number(totalRows[0]?.value ?? 0);
   return {
     rows,
-    total: Number(totalRows[0]?.value ?? 0),
+    total,
     page,
-    pageCount: Math.max(1, Math.ceil(Number(totalRows[0]?.value ?? 0) / pageSize)),
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
   };
 }
 
-export async function listWalletsAdmin(input: { page?: number }) {
+export async function listWalletsAdmin(input: { page?: number; search?: string }) {
   const db = await getDb();
   const page = Math.max(1, input.page ?? 1);
   const pageSize = 25;
+  const search = input.search?.trim();
+  const where = search
+    ? or(
+        ilike(users.email, `%${search}%`),
+        ilike(users.name, `%${search}%`),
+        ilike(users.phone, `%${search}%`),
+      )
+    : undefined;
 
   const [rows, totalRows] = await Promise.all([
     db
@@ -1220,22 +1254,26 @@ export async function listWalletsAdmin(input: { page?: number }) {
         userId: wallets.userId,
         email: users.email,
         name: users.name,
+        phone: users.phone,
         balance: wallets.balance,
         updatedAt: wallets.updatedAt,
       })
       .from(wallets)
       .innerJoin(users, eq(users.id, wallets.userId))
+      .where(where)
       .orderBy(desc(wallets.balance))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ value: count() }).from(wallets),
+    db.select({ value: count() }).from(wallets).innerJoin(users, eq(users.id, wallets.userId)).where(where),
   ]);
 
+  const total = Number(totalRows[0]?.value ?? 0);
   return {
     rows,
-    total: Number(totalRows[0]?.value ?? 0),
+    total,
     page,
-    pageCount: Math.max(1, Math.ceil(Number(totalRows[0]?.value ?? 0) / pageSize)),
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
   };
 }
 

@@ -11,6 +11,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { loginSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
+  const acceptsJson = request.headers.get("content-type")?.includes("application/json") ?? false;
   try {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
     const limited = rateLimit(`admin-login:${ip}`, 6, 15 * 60 * 1000);
@@ -21,7 +22,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const input = loginSchema.parse(await readJson(request));
+    const rawInput = acceptsJson
+      ? await readJson(request)
+      : Object.fromEntries((await request.formData()).entries());
+    const input = loginSchema.parse(rawInput);
     const db = await getDb();
     const rows = await db
       .select()
@@ -44,6 +48,9 @@ export async function POST(request: Request) {
       .where(eq(adminUsers.id, admin.id));
     await audit(admin.id, "admin.login", "admin", admin.id);
 
+    if (!acceptsJson) {
+      return new NextResponse(null, { status: 303, headers: { Location: "/admin" } });
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return jsonError(error);

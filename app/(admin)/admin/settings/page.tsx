@@ -22,7 +22,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" description="Store-wide configuration." />
+      <PageHeader eyebrow="System configuration" title="Settings" description="Store-wide configuration." />
 
       <div
         className={`flex items-start gap-3 rounded-2xl px-4 py-3 text-sm ring-1 ring-inset ${

@@ -36,6 +36,7 @@ export default async function AdminTopupMethodsPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Checkout configuration"
         title="Top-up methods"
         description="How customers identify their account for a package, such as UID, Login or Server. Assign a method to a product, or override it on a single package."
         actions={

@@ -41,6 +41,7 @@ export default async function AdminGamesPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Catalogue structure"
         title="Games"
         description="Organise the games shown on the storefront."
         actions={

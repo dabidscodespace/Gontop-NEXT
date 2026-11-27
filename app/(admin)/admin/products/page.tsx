@@ -7,6 +7,7 @@ import {
   ArrowDownUp,
   CheckCircle2,
   Copy,
+  Download,
   EyeOff,
   FileText,
   ImageOff,
@@ -20,6 +21,7 @@ import {
 import { BulkForm, SelectAll } from "@/components/admin/bulk-form";
 import {
   btnPrimary,
+  btnSecondary,
   Card,
   EmptyState,
   PageHeader,
@@ -163,25 +165,35 @@ export default async function AdminProductsPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Catalogue operations"
         title="Products"
         description="Publication and sales availability are managed separately. Only published, available products on live games reach customers."
         actions={
-          <Link href="/admin/products/new" className={btnPrimary}>
-            <Plus className="h-4 w-4" /> New product
-          </Link>
+          <>
+            <a href="/api/admin/export/products" className={btnSecondary}>
+              <Download className="h-4 w-4" /> Export CSV
+            </a>
+            <Link href="/admin/products/new" className={btnPrimary}>
+              <Plus className="h-4 w-4" /> New product
+            </Link>
+          </>
         }
       />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="All products" value={summary.total} icon={Package} />
-        <StatCard label="Published" value={summary.published} icon={CheckCircle2} tone="emerald" />
-        <StatCard label="Draft" value={summary.draft} icon={FileText} tone="amber" />
-        <StatCard label="Archived" value={summary.archived} icon={Archive} tone="slate" />
-        <StatCard label="Disabled" value={summary.disabled} icon={EyeOff} tone="slate" />
-        <StatCard label="Unavailable" value={summary.unavailable} icon={AlertTriangle} tone="amber" />
+        <StatCard label="All products" value={summary.total} icon={Package} href="/admin/products" />
+        <StatCard label="Published" value={summary.published} icon={CheckCircle2} tone="emerald" href={query({ status: "published", page: undefined })} />
+        <StatCard label="Draft" value={summary.draft} icon={FileText} tone="amber" href={query({ status: "draft", page: undefined })} />
+        <StatCard label="Archived" value={summary.archived} icon={Archive} tone="slate" href={query({ status: "archived", page: undefined })} />
+        <StatCard label="Disabled" value={summary.disabled} icon={EyeOff} tone="slate" href={query({ availability: "disabled", page: undefined })} />
+        <StatCard label="Unavailable" value={summary.unavailable} icon={AlertTriangle} tone="amber" href={query({ availability: "unavailable", page: undefined })} />
       </div>
 
-      <SearchBar defaultValue={params.q} placeholder="Search name, slug, SKU, package SKU, game or variant">
+      <SearchBar
+        defaultValue={params.q}
+        placeholder="Search name, slug, SKU, package SKU, game or variant"
+        resetHref={Object.values(params).some(Boolean) ? "/admin/products" : undefined}
+      >
         <select name="game" defaultValue={params.game ?? ""} className={`${selectCls} h-10 w-auto min-w-36`}>
           <option value="">All games</option>
           {topLevelGames.map((game) => (

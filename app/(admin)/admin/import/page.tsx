@@ -20,6 +20,7 @@ export default async function AdminImportPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Data tools"
         title="CSV Migration"
         description="Bring your WooCommerce catalogue across, then export any time. Nothing here depends on WordPress after import."
       />

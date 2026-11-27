@@ -20,7 +20,7 @@ export default async function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Reports" description="Revenue, payment mix and best-selling packages." />
+      <PageHeader eyebrow="Business intelligence" title="Reports" description="Revenue, payment mix and best-selling packages." />
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <StatCard label="Revenue" value={formatBDT(reports.revenue)} icon={TrendingUp} tone="orange" />

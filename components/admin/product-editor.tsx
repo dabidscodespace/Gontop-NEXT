@@ -50,6 +50,7 @@ export function ProductEditor({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Product workspace"
         back={{ href: "/admin/products", label: "Products" }}
         title={product ? product.product.name : "New product"}
         description={
@@ -59,7 +60,7 @@ export function ProductEditor({
         }
         actions={
           product && (
-            <Link href={`/products/${product.product.slug}`} target="_blank" className={btnSecondary}>
+            <Link href={`/product/${product.product.slug}`} target="_blank" className={btnSecondary}>
               View on store
             </Link>
           )

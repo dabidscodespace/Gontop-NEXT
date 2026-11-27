@@ -28,6 +28,7 @@ export default async function AdminBannersPage({
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Storefront merchandising"
         title="Banners"
         description="One responsive image per banner, shown in the homepage carousel."
         actions={

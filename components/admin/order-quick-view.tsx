@@ -4,6 +4,7 @@ import { ArrowRight, ReceiptText, X } from "lucide-react";
 import { addOrderNoteAction, updateOrderStatusAction } from "@/app/(admin)/admin/actions";
 import { ActionForm } from "@/components/action-form";
 import { CopyButton } from "@/components/admin/copy-button";
+import { DrawerBehavior, DrawerClose } from "@/components/admin/drawer-controls";
 import { btnPrimary, selectCls } from "@/components/admin/ui";
 import type { OrderPaymentStatus, OrderStatus } from "@/db/schema";
 import { formatBDT } from "@/lib/money";
@@ -49,15 +50,16 @@ export function OrderQuickView({
 
   return (
     <>
-      <Link
+      <DrawerBehavior closeHref={closeHref} />
+      <DrawerClose
         href={closeHref}
-        aria-label="Close quick view"
-        className="fixed inset-0 z-40 bg-primary/40 backdrop-blur-[2px]"
+        label="Close quick view"
+        className="fixed inset-0 z-40 bg-gray-950/45 backdrop-blur-[3px]"
       />
       <aside
         role="dialog"
         aria-label={`Order #${order.orderNumber}`}
-        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white text-gray-900 shadow-2xl"
+        className="animate-slide-right fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-gray-200 bg-white text-gray-900 shadow-2xl"
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-4">
           <div className="min-w-0">
@@ -72,13 +74,13 @@ export function OrderQuickView({
               {PAYMENT_STATUS_LABELS[order.paymentStatus]}
             </span>
           </div>
-          <Link
+          <DrawerClose
             href={closeHref}
-            className="shrink-0 rounded-full p-1.5 text-gray-500 hover:bg-gray-100"
-            aria-label="Close"
+            label="Close quick view"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
           >
             <X className="h-4 w-4" />
-          </Link>
+          </DrawerClose>
         </header>
 
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-5">

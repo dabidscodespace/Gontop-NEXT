@@ -35,7 +35,7 @@ export function BulkForm({
         <input key={name} type="hidden" name={name} value={value} />
       ))}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-[72px] z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/90 bg-white/95 p-2 shadow-sm backdrop-blur">
         <select
           name="action"
           value={choice}
