@@ -37,7 +37,9 @@ async function main() {
   const { getDb, closeDb } = await import("../lib/db/index");
   const schema = await import("../db/schema");
   const { registerUser } = await import("../lib/services/auth");
-  const { applyWalletEntry, getWalletBalance } = await import("../lib/services/wallet");
+  const { applyWalletEntry, getWalletBalance, getWalletTotals } = await import("../lib/services/wallet");
+  const { getCustomers, getCustomerDetail } = await import("../lib/services/admin");
+  const { listPaymentsAdmin, listWalletsAdmin, listWalletTransactionsAdmin } = await import("../lib/services/admin-catalog");
   const { eq } = await import("drizzle-orm");
   const { createOrder, cancelUnpaidOrder, updateOrderStatus, getOrderWithDetails, getAdminOrders, getOrderStatusCounts } = await import(
     "../lib/services/orders"
@@ -913,6 +915,22 @@ async function main() {
   const partialHistory = await db.select().from(schema.orderHistory).where(eq(schema.orderHistory.orderId, fulfillment.orderId));
   check("partial refund is recorded in order history", partialHistory.some((h) => /partially refunded/i.test(h.note)));
   check("every history row has a note and a known actor", partialHistory.length > 0 && partialHistory.every((h) => h.note.trim().length > 0 && ["admin", "system", "customer"].includes(h.changedByType)));
+
+  console.log("\n▸ Admin customer and money workspaces");
+  const customerDirectory = await getCustomers({ search: "test@example.com", status: "active" });
+  check("customer directory search and account filter compose", customerDirectory.total === 1 && customerDirectory.rows[0]?.id === user.id);
+  check("customer directory returns global account summary", customerDirectory.summary.total >= 1 && customerDirectory.summary.active >= 1 && customerDirectory.summary.withWallet >= 1);
+  const customerProfile = await getCustomerDetail(user.id);
+  check("customer profile returns lifetime order summary", Boolean(customerProfile && customerProfile.summary.orders > 0 && customerProfile.summary.paidOrders > 0));
+  const walletTotals = await getWalletTotals();
+  check("wallet overview separates funded and zero balances", walletTotals.count >= walletTotals.funded && walletTotals.count === walletTotals.funded + walletTotals.zero);
+  const walletDirectory = await listWalletsAdmin({ search: "test@example.com", balance: "funded" });
+  check("wallet balance directory includes ledger context", walletDirectory.total === 1 && (walletDirectory.rows[0]?.transactionCount ?? 0) > 0);
+  const walletActivity = await listWalletTransactionsAdmin({ search: "Test opening balance", type: "admin_credit" });
+  check("wallet activity filters reason and entry type", walletActivity.rows.some((entry) => entry.userId === user.id && entry.type === "admin_credit"));
+  const paymentDirectory = await listPaymentsAdmin({ search: "test@example.com", type: "all", status: "all" });
+  check("payment directory relates records to the customer", paymentDirectory.rows.length > 0 && paymentDirectory.rows.every((payment) => payment.userId === user.id));
+  check("payment status summary reconciles with its scope", paymentDirectory.summary.all === Object.values(paymentDirectory.summary.counts).reduce((sum, value) => sum + value, 0));
 
   console.log(`\n${failed === 0 ? "✅" : "❌"} ${passed} passed, ${failed} failed\n`);
 

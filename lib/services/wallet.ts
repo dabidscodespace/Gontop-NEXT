@@ -134,7 +134,14 @@ export async function getWalletTotals() {
     .select({
       total: sql<string>`coalesce(sum(${wallets.balance}), 0)`,
       count: sql<number>`count(*)::int`,
+      funded: sql<number>`count(*) filter (where ${wallets.balance} > 0)::int`,
+      zero: sql<number>`count(*) filter (where ${wallets.balance} = 0)::int`,
     })
     .from(wallets);
-  return { total: money(rows[0]?.total), count: Number(rows[0]?.count ?? 0) };
+  return {
+    total: money(rows[0]?.total),
+    count: Number(rows[0]?.count ?? 0),
+    funded: Number(rows[0]?.funded ?? 0),
+    zero: Number(rows[0]?.zero ?? 0),
+  };
 }

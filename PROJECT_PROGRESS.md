@@ -2,11 +2,11 @@
 
 ## Current Stage
 
-Stages 1–5 implemented and tested. Remaining known gaps are listed under Known Issues.
+Core commerce safeguards and the complete admin workspace reorganization are implemented and tested. Remaining known infrastructure limitations are listed under Known Issues.
 
 ## Current Task
 
-Stage 5 — Product management gaps (done).
+Admin information-architecture follow-up — customer, money, storefront-support, migration, settings, reporting, and team workspaces (done).
 
 ## Completed
 
@@ -50,7 +50,7 @@ Nothing.
 
 ## Pending
 
-Stage 5 is complete.
+No implementation work is pending for the requested admin reorganization. The live preview remains available for final owner visual review.
 
 ## Audit Findings
 
@@ -205,3 +205,15 @@ Stages 1–5 implemented, migrations 0010–0011 additive and applied in tests, 
 - Rebuilt game management as a grouped library inside Popular Games: each top-level card owns its regional variants, product counts and state are visible together, and the add/edit form clearly distinguishes a Popular game card from a regional modal variant.
 - Existing category/game validation, deletion protections, product relationships, modal storefront behavior, permissions, audit logs, and storefront revalidation remain unchanged.
 - Verification: ESLint, TypeScript, production build, authenticated HTTP checks for both category tabs and both Popular Games subtabs, legacy Games-route redirect checks, and `git diff --check` pass. All 252 tests remain green.
+
+## Admin organization follow-up: remaining workspaces
+- Added permission-aware contextual workspace navigation for Customers & Money, Commerce, and System administration. Related records are now reachable without relying on disconnected sidebar entries; existing routes and RBAC remain authoritative.
+- Customers: account-state summaries and filters, global wallet context, clearer order/wallet relationships, and a reorganized profile with Overview, Orders, and Wallet ledger tabs. Lifetime order/spend summaries are computed server-side. Account disabling and wallet adjustment keep their existing permission, confirmation, validation, audit, locking, and revalidation paths.
+- Payments: completed-volume and flow summaries, search + flow + status filtering, related customer/order links, and an explicit server-verification safety explanation. Payment rows now expose their existing customer/order relationships; verification behavior was not weakened.
+- Wallets: separate Customer balances and immutable Ledger activity views, funded/zero-balance filters, transaction context, and direct profile/adjustment links. Added read-only admin ledger querying while preserving `applyWalletEntry` locking, non-negative balance enforcement, mandatory adjustment reasons, and audit records.
+- Reports: split revenue, product performance, and inventory risk into clear report tabs; clarified recognized-revenue scope and added links back to source records.
+- Banners and top-up methods: added commerce context, useful state/usage summaries, scan-friendly libraries, sticky editors, clearer ordering and assignment consequences, and responsive presentation. Top-up methods now show product-default and package-override usage before deletion.
+- Data migration: replaced three stacked import forms with Products, Customers, Orders, and Guide tabs; added the recommended sequence and explicit safety guarantees. Preview-before-confirm, duplicate skipping, validation, and wallet isolation remain unchanged. Product export remains available from the product panel.
+- Settings and team access: reorganized settings by identity, limits, polling, feature switches, gateway health, and server-only environment; grouped staff permissions by operational domain and added role/access/login summaries. All original action contracts and last-owner safeguards remain intact.
+- Service coverage added for customer summaries, customer lifetime metrics, payment status/flow summaries, wallet balance context, and cross-customer ledger filtering.
+- Verification: ESLint clean, TypeScript clean, production build clean, `git diff --check` clean, and authenticated HTTP smoke checks passed for all redesigned routes, filters, report tabs, migration tabs, and all three customer-profile tabs. Tests: flows 134/134, lifecycle 55/55, catalogue 23/23, dashboard 48/48 — 260/260 total.

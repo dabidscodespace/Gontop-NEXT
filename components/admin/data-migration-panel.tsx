@@ -1,9 +1,18 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, FileUp, Loader2, Users, ReceiptText } from "lucide-react";
-import { useActionState, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileSpreadsheet,
+  FileUp,
+  Loader2,
+  ReceiptText,
+  Users,
+} from "lucide-react";
+import { useActionState, useRef, useState } from "react";
 
 import { importCustomersAction, importOrdersAction } from "@/app/(admin)/admin/actions";
+import { btnPrimary, Card, textareaCls } from "@/components/admin/ui";
 import { EMPTY_FORM_STATE, type FormState } from "@/lib/action-types";
 import { formatBDT } from "@/lib/money";
 
@@ -14,7 +23,7 @@ export function CustomerMigrationPanel() {
     <MigrationCard
       kind="customers"
       title="Import customers"
-      description="Upload a WooCommerce customer export or a WordPress users CSV. Accounts are matched by email; existing customers are skipped. Passwords cannot be imported."
+      description="Upload a WooCommerce customer export or WordPress users CSV. Accounts match by email; existing customers are skipped and passwords are never imported."
       action={importCustomersAction}
     />
   );
@@ -24,27 +33,18 @@ export function OrderMigrationPanel() {
   return (
     <MigrationCard
       kind="orders"
-      title="Import orders"
-      description="Upload a WooCommerce order export (one row per order, or one row per line item). Missing customers are created automatically. Wallet balances and ledger entries are never changed."
+      title="Import order history"
+      description="Upload one row per order or per line item. Missing customers are created by billing email; wallet balances and wallet ledger entries are never changed."
       action={importOrdersAction}
     />
   );
 }
 
-function MigrationCard({
-  kind,
-  title,
-  description,
-  action,
-}: {
-  kind: MigrationKind;
-  title: string;
-  description: string;
-  action: (state: FormState, formData: FormData) => Promise<FormState>;
-}) {
+function MigrationCard({ kind, title, description, action }: { kind: MigrationKind; title: string; description: string; action: (state: FormState, formData: FormData) => Promise<FormState> }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const Icon = kind === "customers" ? Users : ReceiptText;
 
   function buildFormData(mode: "preview" | "import") {
@@ -56,172 +56,80 @@ function MigrationCard({
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm">
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 rounded-xl bg-orange-50 p-1.5 text-accent-orange">
-          <Icon className="h-4 w-4" />
-        </span>
-        <div>
-          <h2 className="text-base font-bold text-gray-900">{title}</h2>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-gray-500">{description}</p>
-        </div>
-      </div>
-
-      <form action={formAction} className="mt-3 space-y-3">
+    <Card title={title} icon={Icon} description={description}>
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="mode" value="preview" />
-        <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition hover:border-accent-orange text-center">
-          <FileUp className="mx-auto h-6 w-6 text-gray-400" />
-          <label className="mt-2 block cursor-pointer text-xs font-semibold text-accent-orange">
-            Choose CSV file
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              name="file"
-              className="sr-only"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            />
-          </label>
-          <p className="mt-1 text-[10px] text-gray-400">
-            {file ? `${file.name} (${Math.round(file.size / 1024)} KB)` : "Max 8 MB"}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-600">…or paste CSV</label>
-          <textarea
-            name="csv"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={5}
-            placeholder={
-              kind === "customers"
-                ? "email,first_name,last_name,phone,registered"
-                : "order_id,order_date,status,billing_email,order_total,line_items"
-            }
-            className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-accent-orange/20 font-mono text-[11px] focus:border-accent-orange focus:outline-none"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-accent-orange px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-500/25 transition hover:bg-orange-600 disabled:opacity-60"
-        >
-          {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Preview {kind}
+        <button type="button" onClick={() => fileRef.current?.click()} className="group flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50/80 px-6 py-9 text-center transition hover:border-accent-orange hover:bg-orange-50/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent-orange/10">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-gray-400 shadow-sm ring-1 ring-gray-200 transition group-hover:text-accent-orange"><FileUp className="h-5 w-5" /></span>
+          <span className="mt-3 text-sm font-extrabold text-gray-800">{file ? file.name : `Choose a ${kind} CSV`}</span>
+          <span className="mt-1 text-xs text-gray-400">{file ? `${Math.max(1, Math.round(file.size / 1024)).toLocaleString()} KB selected · click to replace` : "WooCommerce or WordPress CSV · maximum 8 MB"}</span>
         </button>
+        <input ref={fileRef} type="file" accept=".csv,text/csv" name="file" className="sr-only" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+
+        <details className="group rounded-xl border border-gray-200 bg-white">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-extrabold text-gray-600"><FileSpreadsheet className="h-3.5 w-3.5 text-gray-400" /> Paste CSV instead <span className="ml-auto text-gray-300 transition group-open:rotate-180">⌄</span></summary>
+          <div className="border-t border-gray-100 p-4">
+            <textarea name="csv" value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder={kind === "customers" ? "email,first_name,last_name,phone,registered" : "order_id,order_date,status,billing_email,order_total,line_items"} className={`${textareaCls} font-mono text-[11px]`} />
+          </div>
+        </details>
+
+        <button type="submit" disabled={pending || (!file && !text.trim())} className={btnPrimary}>{pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Preview {kind} import</button>
       </form>
 
-      {state.error && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          {state.error}
-        </div>
-      )}
-      {state.message && !state.migration && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-          {state.message}
-        </div>
-      )}
+      <Feedback error={state.error} message={!state.migration ? state.message : undefined} />
 
       {state.migration && (
-        <div className="mt-4 space-y-3">
+        <div className="mt-5 space-y-4 border-t border-gray-100 pt-5">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label="Rows" value={state.migration.totalRows} />
-            <Stat
-              label={kind === "customers" ? "Customers" : "Orders"}
-              value={state.migration.groups}
-            />
-            <Stat label="New" value={state.migration.newGroups} />
-            <Stat label="Existing" value={state.migration.existingGroups} />
+            <Stat label="CSV rows" value={state.migration.totalRows} />
+            <Stat label={kind === "customers" ? "Customers" : "Orders"} value={state.migration.groups} />
+            <Stat label="Ready to import" value={state.migration.newGroups} tone="emerald" />
+            <Stat label="Already exists" value={state.migration.existingGroups} tone="amber" />
           </div>
 
           {state.migration.warnings.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800">
-              <p className="font-bold">{state.migration.warnings.length} warning(s)</p>
-              <ul className="mt-1 max-h-32 space-y-1 overflow-y-auto">
-                {state.migration.warnings.slice(0, 10).map((warning, index) => (
-                  <li key={index}>{warning}</li>
-                ))}
-              </ul>
-            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[11px] text-amber-800"><p className="font-extrabold">{state.migration.warnings.length} warning{state.migration.warnings.length === 1 ? "" : "s"}</p><ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">{state.migration.warnings.slice(0, 10).map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>
           )}
-
           {state.migration.errors.length > 0 && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3">
-              <p className="text-xs font-bold text-red-700">
-                {state.migration.errors.length} row error(s) — nothing can be imported yet
-              </p>
-              <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-[11px] text-red-600">
-                {state.migration.errors.slice(0, 20).map((error, index) => (
-                  <li key={index}>
-                    Row {error.row}: {error.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3.5"><p className="text-xs font-extrabold text-red-700">{state.migration.errors.length} row error{state.migration.errors.length === 1 ? "" : "s"} · fix these before importing</p><ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-[11px] text-red-600">{state.migration.errors.slice(0, 20).map((error, index) => <li key={index}>Row {error.row}: {error.message}</li>)}</ul></div>
           )}
 
-          <div className="max-h-64 overflow-auto rounded-xl border border-gray-200">
-            <table className="w-full text-left text-[11px]">
-              <thead className="sticky top-0 bg-gray-50 text-[9px] uppercase text-gray-500">
-                <tr>
-                  <th className="px-2 py-1.5">{kind === "customers" ? "Customer" : "Order"}</th>
-                  <th className="px-2 py-1.5">Email</th>
-                  {kind === "orders" && <th className="px-2 py-1.5">Total</th>}
-                  {kind === "orders" && <th className="px-2 py-1.5">Status</th>}
-                  <th className="px-2 py-1.5">Import</th>
-                </tr>
+          <div className="max-h-72 overflow-auto rounded-xl border border-gray-200">
+            <table className="w-full min-w-[560px] text-left text-[11px]">
+              <thead className="sticky top-0 border-b border-gray-200 bg-gray-50 text-[9px] font-black uppercase tracking-wide text-gray-500">
+                <tr><th className="px-3 py-2.5">{kind === "customers" ? "Customer" : "Order"}</th><th className="px-3 py-2.5">Email</th>{kind === "orders" && <th className="px-3 py-2.5">Total</th>}{kind === "orders" && <th className="px-3 py-2.5">Status</th>}<th className="px-3 py-2.5">Decision</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {state.migration.items.map((item) => (
-                  <tr key={item.key}>
-                    <td className="px-2 py-1.5 font-semibold text-gray-800">{item.label}</td>
-                    <td className="px-2 py-1.5 text-gray-600">{item.email}</td>
-                    {kind === "orders" && (
-                      <td className="px-2 py-1.5 text-gray-600">
-                        {item.total === null ? "—" : formatBDT(item.total)}
-                      </td>
-                    )}
-                    {kind === "orders" && (
-                      <td className="px-2 py-1.5 text-gray-600">{item.status ?? "—"}</td>
-                    )}
-                    <td className="px-2 py-1.5">
-                      {item.exists ? (
-                        <span className="text-amber-600">Skip (exists)</span>
-                      ) : (
-                        <span className="text-emerald-600">New</span>
-                      )}
-                    </td>
-                  </tr>
+                  <tr key={item.key}><td className="px-3 py-2.5 font-extrabold text-gray-800">{item.label}</td><td className="px-3 py-2.5 text-gray-600">{item.email}</td>{kind === "orders" && <td className="px-3 py-2.5 text-gray-600">{item.total === null ? "—" : formatBDT(item.total)}</td>}{kind === "orders" && <td className="px-3 py-2.5 capitalize text-gray-600">{item.status ?? "—"}</td>}<td className="px-3 py-2.5">{item.exists ? <Decision tone="amber">Skip · exists</Decision> : <Decision tone="emerald">Import · new</Decision>}</td></tr>
                 ))}
               </tbody>
             </table>
           </div>
 
           {state.migration.errors.length === 0 && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => formAction(buildFormData("import"))}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Import {state.migration.newGroups} {kind}
-            </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+              <p className="text-xs font-bold text-emerald-800">Preview valid · {state.migration.newGroups} new {kind} record{state.migration.newGroups === 1 ? "" : "s"} will be written.</p>
+              <button type="button" disabled={pending || state.migration.newGroups === 0} onClick={() => formAction(buildFormData("import"))} className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50">{pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Confirm import</button>
+            </div>
           )}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-2 text-center">
-      <p className="text-[10px] text-gray-500">{label}</p>
-      <p className="text-sm font-bold text-gray-900">{value}</p>
-    </div>
-  );
+function Feedback({ error, message }: { error?: string; message?: string }) {
+  if (!error && !message) return null;
+  const failed = Boolean(error);
+  return <div className={`mt-4 flex items-start gap-2 rounded-xl border p-3 text-xs ${failed ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{failed ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}<span>{error || message}</span></div>;
+}
+
+function Stat({ label, value, tone = "slate" }: { label: string; value: number; tone?: "slate" | "emerald" | "amber" }) {
+  const style = tone === "emerald" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-gray-200 bg-gray-50 text-gray-900";
+  return <div className={`rounded-xl border p-3 text-center ${style}`}><p className="text-[9px] font-black uppercase tracking-wide opacity-60">{label}</p><p className="mt-1 text-lg font-black">{value.toLocaleString()}</p></div>;
+}
+
+function Decision({ children, tone }: { children: React.ReactNode; tone: "emerald" | "amber" }) {
+  return <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${tone === "emerald" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{children}</span>;
 }

@@ -1,55 +1,148 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Mail, Phone, Users, Wallet } from "lucide-react";
+import {
+  ArrowRight,
+  Mail,
+  Phone,
+  SearchX,
+  UserCheck,
+  Users,
+  UserX,
+  Wallet,
+} from "lucide-react";
 
-import { Card, EmptyState, PageHeader, Pagination, SearchBar, tdCls, thCls } from "@/components/admin/ui";
+import { CustomerMoneyNav } from "@/components/admin/workspace-nav";
+import {
+  btnSecondary,
+  Card,
+  EmptyState,
+  PageHeader,
+  Pagination,
+  SearchBar,
+  StatCard,
+  tdCls,
+  thCls,
+} from "@/components/admin/ui";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { formatBDT } from "@/lib/money";
 import { hasPermission } from "@/lib/permissions";
 import { getCustomers } from "@/lib/services/admin";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+type CustomerFilter = "all" | "active" | "disabled";
+
+const FILTERS: Array<{ key: CustomerFilter; label: string; icon: typeof Users }> = [
+  { key: "all", label: "All customers", icon: Users },
+  { key: "active", label: "Active", icon: UserCheck },
+  { key: "disabled", label: "Disabled", icon: UserX },
+];
 
 export default async function AdminCustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
   const { admin } = await getSession();
   if (!admin) redirect("/admin/login");
   if (!hasPermission(admin, "customers.view")) return <NoAccess />;
 
   const params = await searchParams;
-  const result = await getCustomers({ search: params.q, page: params.page ? Number(params.page) : 1 });
+  const status: CustomerFilter = ["active", "disabled"].includes(params.status ?? "")
+    ? (params.status as CustomerFilter)
+    : "all";
+  const result = await getCustomers({
+    search: params.q,
+    status,
+    page: params.page ? Number(params.page) : 1,
+  });
 
-  const hrefFor = (page: number) => {
+  const hrefFor = (overrides: { page?: number; status?: CustomerFilter } = {}) => {
+    const nextStatus = overrides.status ?? status;
+    const page = overrides.page ?? 1;
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
+    if (nextStatus !== "all") query.set("status", nextStatus);
     if (page > 1) query.set("page", String(page));
     const value = query.toString();
     return `/admin/customers${value ? `?${value}` : ""}`;
   };
+  const activeFilters = Boolean(params.q || status !== "all");
+  const resetSearchHref = status === "all" ? "/admin/customers" : `/admin/customers?status=${status}`;
   const rangeStart = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
   const rangeEnd = Math.min(result.total, result.page * result.pageSize);
+  const counts: Record<CustomerFilter, number> = {
+    all: result.summary.total,
+    active: result.summary.active,
+    disabled: result.summary.disabled,
+  };
 
   return (
     <div className="space-y-5">
       <PageHeader
         eyebrow="Customer relationships"
         title="Customers"
-        description={`${result.total.toLocaleString()} customer${result.total === 1 ? "" : "s"}${params.q ? " match this search" : " registered on GONTOP"}. Open a profile to review orders or manage their wallet.`}
+        description="Find an account, understand its order and wallet history, then take the right action from one profile."
       />
+
+      <CustomerMoneyNav admin={admin} active="customers" />
+
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <Card padded={false} className="overflow-hidden">
+          <nav aria-label="Filter customers by account status" className="grid grid-cols-3 divide-x divide-gray-100">
+            {FILTERS.map(({ key, label, icon: Icon }) => {
+              const active = status === key;
+              return (
+                <Link
+                  key={key}
+                  href={hrefFor({ status: key })}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group flex min-w-0 items-center gap-2.5 px-3 py-3.5 transition sm:px-4",
+                    active ? "bg-gray-950 text-white" : "bg-white text-gray-600 hover:bg-gray-50",
+                  )}
+                >
+                  <span className={cn("hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:flex", active ? "bg-white/10 text-accent-orange" : "bg-gray-100 text-gray-500 group-hover:text-accent-orange")}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className={cn("block truncate text-[10px] font-black uppercase tracking-[0.08em]", active ? "text-white/55" : "text-gray-400")}>{label}</span>
+                    <span className="mt-0.5 block text-lg font-black tabular-nums">{counts[key].toLocaleString()}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </Card>
+        <StatCard
+          label="Customer wallet funds"
+          value={formatBDT(result.summary.walletBalance)}
+          hint={`${result.summary.withWallet.toLocaleString()} customer wallet${result.summary.withWallet === 1 ? "" : "s"}`}
+          icon={Wallet}
+          tone="emerald"
+          href={hasPermission(admin, "wallet.manage") ? "/admin/wallets" : undefined}
+        />
+      </div>
 
       <SearchBar
         defaultValue={params.q ?? ""}
         placeholder="Search name, email or phone number"
-        resetHref={params.q ? "/admin/customers" : undefined}
-      />
+        resetHref={params.q ? resetSearchHref : undefined}
+        submitLabel="Filter"
+      >
+        {status !== "all" && <input type="hidden" name="status" value={status} />}
+      </SearchBar>
 
-      <Card padded={false} className="overflow-hidden">
+      <Card
+        title={activeFilters ? "Matching customers" : "Customer directory"}
+        description={activeFilters ? `${result.total.toLocaleString()} account${result.total === 1 ? "" : "s"} match the current view.` : "Every registered customer, newest first."}
+        padded={false}
+        className="overflow-hidden"
+      >
         <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[760px]">
+          <table className="w-full min-w-[820px]">
             <thead className="border-b border-gray-100 bg-gray-50/70">
               <tr>
                 <th className={thCls}>Customer</th>
@@ -57,7 +150,7 @@ export default async function AdminCustomersPage({
                 <th className={thCls}>Orders</th>
                 <th className={thCls}>Wallet balance</th>
                 <th className={thCls}>Joined</th>
-                <th className={thCls}>Status</th>
+                <th className={thCls}>Access</th>
                 <th className={`${thCls} text-right`}>Profile</th>
               </tr>
             </thead>
@@ -65,7 +158,7 @@ export default async function AdminCustomersPage({
               {result.rows.map((customer) => {
                 const initial = (customer.name || customer.email).charAt(0).toUpperCase();
                 return (
-                  <tr key={customer.id} className="hover:bg-orange-50/30">
+                  <tr key={customer.id} className="transition hover:bg-orange-50/30">
                     <td className={tdCls}>
                       <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-950 text-xs font-black text-white">
@@ -83,9 +176,19 @@ export default async function AdminCustomersPage({
                       <p className="flex items-center gap-1.5 text-xs text-gray-600"><Phone className="h-3 w-3 text-gray-400" /> {customer.phone || "No phone"}</p>
                     </td>
                     <td className={tdCls}>
-                      <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-black text-gray-700">{customer.orderCount}</span>
+                      {hasPermission(admin, "orders.view") ? (
+                        <Link href={`/admin/orders?q=${encodeURIComponent(customer.email)}`} className="inline-flex min-w-8 items-center justify-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-black text-gray-700 transition hover:bg-orange-50 hover:text-accent-orange">{customer.orderCount}</Link>
+                      ) : (
+                        <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-gray-100 px-2 py-1 text-xs font-black text-gray-700">{customer.orderCount}</span>
+                      )}
                     </td>
-                    <td className={`${tdCls} whitespace-nowrap font-black text-gray-950`}>{formatBDT(customer.balance)}</td>
+                    <td className={`${tdCls} whitespace-nowrap`}>
+                      {hasPermission(admin, "wallet.manage") ? (
+                        <Link href={`/admin/customers/${customer.id}?tab=wallet`} className="font-black text-gray-950 hover:text-accent-orange">{formatBDT(customer.balance)}</Link>
+                      ) : (
+                        <span className="font-black text-gray-950">{formatBDT(customer.balance)}</span>
+                      )}
+                    </td>
                     <td className={`${tdCls} whitespace-nowrap text-xs font-medium text-gray-500`}>
                       {new Date(customer.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
@@ -119,12 +222,12 @@ export default async function AdminCustomersPage({
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-xs">
-                  <div><p className="text-[10px] font-bold uppercase text-gray-400">Orders</p><p className="mt-0.5 font-black text-gray-900">{customer.orderCount}</p></div>
-                  <div><p className="text-[10px] font-bold uppercase text-gray-400">Wallet</p><p className="mt-0.5 truncate font-black text-gray-900">{formatBDT(customer.balance)}</p></div>
-                  <div><p className="text-[10px] font-bold uppercase text-gray-400">Joined</p><p className="mt-0.5 font-bold text-gray-700">{new Date(customer.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></div>
+                  <MobileFact label="Orders" value={String(customer.orderCount)} />
+                  <MobileFact label="Wallet" value={formatBDT(customer.balance)} />
+                  <MobileFact label="Joined" value={new Date(customer.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} />
                 </div>
-                <Link href={`/admin/customers/${customer.id}`} className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 text-xs font-extrabold text-gray-700">
-                  View customer <ArrowRight className="h-3.5 w-3.5" />
+                <Link href={`/admin/customers/${customer.id}`} className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 text-xs font-extrabold text-gray-700 transition hover:border-gray-900 hover:bg-gray-950 hover:text-white">
+                  View account, orders & wallet <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </li>
             );
@@ -132,13 +235,18 @@ export default async function AdminCustomersPage({
         </ul>
 
         {result.rows.length === 0 && (
-          <EmptyState icon={Users} title="No customers found" description="Try a different name, email, or phone number." />
+          <EmptyState
+            icon={activeFilters ? SearchX : Users}
+            title={activeFilters ? "No customers match" : "No customers yet"}
+            description={activeFilters ? "Try another search or clear the current account-status filter." : "Registered customer accounts will appear here."}
+            action={activeFilters ? <Link href="/admin/customers" className={btnSecondary}>Clear filters</Link> : undefined}
+          />
         )}
 
         {result.rows.length > 0 && (
           <footer className="flex flex-col items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/50 px-4 py-3 sm:flex-row">
             <p className="text-xs font-semibold text-gray-500">Showing {rangeStart}–{rangeEnd} of {result.total.toLocaleString()}</p>
-            <Pagination page={result.page} pageCount={result.pageCount} buildHref={hrefFor} />
+            <Pagination page={result.page} pageCount={result.pageCount} buildHref={(page) => hrefFor({ page })} />
           </footer>
         )}
       </Card>
@@ -153,4 +261,8 @@ function CustomerStatus({ active, compact = false }: { active: boolean; compact?
       {active ? "Active" : "Disabled"}
     </span>
   );
+}
+
+function MobileFact({ label, value }: { label: string; value: string }) {
+  return <div className="min-w-0"><p className="text-[9px] font-black uppercase tracking-wide text-gray-400">{label}</p><p className="mt-0.5 truncate font-black text-gray-900">{value}</p></div>;
 }

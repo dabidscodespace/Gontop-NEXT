@@ -121,20 +121,31 @@ export async function getDashboardStats() {
   };
 }
 
-export async function getCustomers(input: { search?: string; page?: number; pageSize?: number }) {
+export async function getCustomers(input: {
+  search?: string;
+  status?: "all" | "active" | "disabled";
+  page?: number;
+  pageSize?: number;
+}) {
   const db = await getDb();
   const page = Math.max(1, input.page ?? 1);
   const pageSize = Math.min(50, Math.max(10, input.pageSize ?? 20));
   const search = input.search?.trim();
-  const where = search
+  const searchWhere = search
     ? or(
         ilike(users.email, `%${search}%`),
         ilike(users.name, `%${search}%`),
         ilike(users.phone, `%${search}%`),
       )
     : undefined;
+  const statusWhere = input.status === "active"
+    ? eq(users.isActive, true)
+    : input.status === "disabled"
+      ? eq(users.isActive, false)
+      : undefined;
+  const where = searchWhere && statusWhere ? and(searchWhere, statusWhere) : searchWhere ?? statusWhere;
 
-  const [rows, totalRows] = await Promise.all([
+  const [rows, totalRows, summaryRows] = await Promise.all([
     db
       .select({
         id: users.id,
@@ -155,14 +166,32 @@ export async function getCustomers(input: { search?: string; page?: number; page
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ value: count() }).from(users).where(where),
+    db
+      .select({
+        total: count(),
+        active: sql<number>`count(*) filter (where ${users.isActive} = true)::int`,
+        disabled: sql<number>`count(*) filter (where ${users.isActive} = false)::int`,
+        withWallet: sql<number>`count(${wallets.userId})::int`,
+        walletBalance: sql<string>`coalesce(sum(${wallets.balance}), 0)`,
+      })
+      .from(users)
+      .leftJoin(wallets, eq(wallets.userId, users.id)),
   ]);
 
+  const summary = summaryRows[0];
   return {
     rows: rows.map((row) => ({ ...row, balance: money(row.balance ?? 0) })),
     total: Number(totalRows[0]?.value ?? 0),
     page,
     pageSize,
     pageCount: Math.max(1, Math.ceil(Number(totalRows[0]?.value ?? 0) / pageSize)),
+    summary: {
+      total: Number(summary?.total ?? 0),
+      active: Number(summary?.active ?? 0),
+      disabled: Number(summary?.disabled ?? 0),
+      withWallet: Number(summary?.withWallet ?? 0),
+      walletBalance: money(summary?.walletBalance),
+    },
   };
 }
 
@@ -172,11 +201,12 @@ export async function getCustomerDetail(userId: string) {
   const user = userRows[0];
   if (!user) return null;
 
-  const [orderRows, walletRows, txRows] = await Promise.all([
+  const [orderRows, walletRows, txRows, orderSummaryRows] = await Promise.all([
     db
       .select({
         id: orders.id,
         publicId: orders.publicId,
+        orderNumber: orders.orderNumber,
         status: orders.status,
         total: orders.total,
         createdAt: orders.createdAt,
@@ -192,13 +222,29 @@ export async function getCustomerDetail(userId: string) {
       .where(eq(walletTransactions.userId, userId))
       .orderBy(desc(walletTransactions.createdAt))
       .limit(20),
+    db
+      .select({
+        total: count(),
+        paid: sql<number>`count(*) filter (where ${orders.status} in ('processing', 'completed', 'on_hold'))::int`,
+        spent: sql<string>`coalesce(sum(${orders.total}) filter (where ${orders.status} in ('processing', 'completed', 'on_hold')), 0)`,
+        lastOrderAt: sql<Date | null>`max(${orders.createdAt})`,
+      })
+      .from(orders)
+      .where(eq(orders.userId, userId)),
   ]);
 
+  const orderSummary = orderSummaryRows[0];
   return {
     user,
     balance: money(walletRows[0]?.balance),
     orders: orderRows,
     transactions: txRows,
+    summary: {
+      orders: Number(orderSummary?.total ?? 0),
+      paidOrders: Number(orderSummary?.paid ?? 0),
+      spent: money(orderSummary?.spent),
+      lastOrderAt: orderSummary?.lastOrderAt ?? null,
+    },
   };
 }
 
@@ -273,6 +319,7 @@ export async function getLowStock(limit = 10) {
   return db
     .select({
       id: variations.id,
+      productId: products.id,
       name: variations.name,
       stockQuantity: variations.stockQuantity,
       stockStatus: variations.stockStatus,

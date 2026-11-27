@@ -12,14 +12,17 @@ import {
   categoryProducts,
   games,
   orderItems,
+  orders,
   payments,
   products,
   topupMethods,
   users,
   variations,
   wallets,
+  walletTransactions,
   adminUsers,
   type PaymentStatus,
+  type WalletTxType,
 } from "@/db/schema";
 import {
   AVAILABILITY_STATUSES,
@@ -1116,7 +1119,25 @@ export async function bulkUpdateVariations(
 
 export async function listTopupMethodsAdmin() {
   const db = await getDb();
-  return db.select().from(topupMethods).orderBy(asc(topupMethods.sortOrder), asc(topupMethods.name));
+  return db
+    .select({
+      id: topupMethods.id,
+      key: topupMethods.key,
+      name: topupMethods.name,
+      description: topupMethods.description,
+      sortOrder: topupMethods.sortOrder,
+      isActive: topupMethods.isActive,
+      createdAt: topupMethods.createdAt,
+      updatedAt: topupMethods.updatedAt,
+      productCount: sql<number>`(
+        select count(*)::int from ${products} p where p.topup_method_id = ${topupMethods.id}
+      )`,
+      packageCount: sql<number>`(
+        select count(*)::int from ${variations} v where v.topup_method_id = ${topupMethods.id}
+      )`,
+    })
+    .from(topupMethods)
+    .orderBy(asc(topupMethods.sortOrder), asc(topupMethods.name));
 }
 
 export async function saveTopupMethod(input: z.infer<typeof topupMethodSchema>, id?: number) {
@@ -1179,16 +1200,17 @@ export async function listPaymentsAdmin(input: {
   page?: number;
   search?: string;
   status?: PaymentStatus | "all";
+  type?: "order" | "wallet_deposit" | "all";
 }) {
   const db = await getDb();
   const page = Math.max(1, input.page ?? 1);
   const pageSize = 25;
-  const conditions = [];
-  if (input.status && input.status !== "all") conditions.push(eq(payments.status, input.status));
+  const scopeConditions = [];
+  if (input.type && input.type !== "all") scopeConditions.push(eq(payments.type, input.type));
   const search = input.search?.trim();
   if (search) {
     const pattern = `%${search}%`;
-    conditions.push(
+    scopeConditions.push(
       or(
         ilike(users.email, pattern),
         ilike(users.name, pattern),
@@ -1198,12 +1220,18 @@ export async function listPaymentsAdmin(input: {
       ),
     );
   }
+  const conditions = [...scopeConditions];
+  if (input.status && input.status !== "all") conditions.push(eq(payments.status, input.status));
   const where = conditions.length ? and(...conditions) : undefined;
+  const scopeWhere = scopeConditions.length ? and(...scopeConditions) : undefined;
 
-  const [rows, totalRows] = await Promise.all([
+  const [rows, totalRows, summaryRows] = await Promise.all([
     db
       .select({
         id: payments.id,
+        userId: payments.userId,
+        orderId: payments.orderId,
+        orderNumber: orders.orderNumber,
         invoiceId: payments.invoiceId,
         type: payments.type,
         gateway: payments.gateway,
@@ -1213,16 +1241,122 @@ export async function listPaymentsAdmin(input: {
         transactionId: payments.transactionId,
         senderNumber: payments.senderNumber,
         createdAt: payments.createdAt,
+        completedAt: payments.completedAt,
         customerEmail: users.email,
         customerName: users.name,
       })
       .from(payments)
       .innerJoin(users, eq(users.id, payments.userId))
+      .leftJoin(orders, eq(orders.id, payments.orderId))
       .where(where)
       .orderBy(desc(payments.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ value: count() }).from(payments).innerJoin(users, eq(users.id, payments.userId)).where(where),
+    db
+      .select({
+        status: payments.status,
+        type: payments.type,
+        value: count(),
+        amount: sql<string>`coalesce(sum(${payments.amount}), 0)`,
+        verifiable: sql<number>`count(*) filter (where ${payments.invoiceId} is not null and ${payments.status} in ('initiated', 'pending', 'failed'))::int`,
+      })
+      .from(payments)
+      .innerJoin(users, eq(users.id, payments.userId))
+      .where(scopeWhere)
+      .groupBy(payments.status, payments.type),
+  ]);
+
+  const total = Number(totalRows[0]?.value ?? 0);
+  const counts = Object.fromEntries(PAYMENT_STATUSES_FOR_SUMMARY.map((status) => [status, 0])) as Record<PaymentStatus, number>;
+  let all = 0;
+  let completedAmount = 0;
+  let orderPayments = 0;
+  let walletDeposits = 0;
+  let needsVerification = 0;
+  for (const row of summaryRows) {
+    const value = Number(row.value);
+    counts[row.status] += value;
+    all += value;
+    if (row.status === "completed") completedAmount += money(row.amount);
+    if (row.type === "order") orderPayments += value;
+    else walletDeposits += value;
+    needsVerification += Number(row.verifiable);
+  }
+
+  return {
+    rows,
+    total,
+    page,
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    summary: {
+      all,
+      counts,
+      completedAmount,
+      needsVerification,
+      orderPayments,
+      walletDeposits,
+    },
+  };
+}
+
+const PAYMENT_STATUSES_FOR_SUMMARY: PaymentStatus[] = [
+  "initiated",
+  "pending",
+  "completed",
+  "failed",
+  "cancelled",
+  "refunded",
+];
+
+export async function listWalletsAdmin(input: {
+  page?: number;
+  search?: string;
+  balance?: "all" | "funded" | "zero";
+}) {
+  const db = await getDb();
+  const page = Math.max(1, input.page ?? 1);
+  const pageSize = 25;
+  const conditions = [];
+  const search = input.search?.trim();
+  if (search) {
+    conditions.push(
+      or(
+        ilike(users.email, `%${search}%`),
+        ilike(users.name, `%${search}%`),
+        ilike(users.phone, `%${search}%`),
+      ),
+    );
+  }
+  if (input.balance === "funded") conditions.push(sql`${wallets.balance} > 0`);
+  if (input.balance === "zero") conditions.push(sql`${wallets.balance} = 0`);
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, totalRows] = await Promise.all([
+    db
+      .select({
+        userId: wallets.userId,
+        email: users.email,
+        name: users.name,
+        phone: users.phone,
+        balance: wallets.balance,
+        updatedAt: wallets.updatedAt,
+        transactionCount: sql<number>`(
+          select count(*)::int from ${walletTransactions} wt where wt.user_id = ${wallets.userId}
+        )`,
+        lastTransactionType: sql<WalletTxType | null>`(
+          select wt.type from ${walletTransactions} wt where wt.user_id = ${wallets.userId}
+          order by wt.created_at desc limit 1
+        )`,
+      })
+      .from(wallets)
+      .innerJoin(users, eq(users.id, wallets.userId))
+      .where(where)
+      .orderBy(desc(wallets.balance))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ value: count() }).from(wallets).innerJoin(users, eq(users.id, wallets.userId)).where(where),
   ]);
 
   const total = Number(totalRows[0]?.value ?? 0);
@@ -1235,36 +1369,59 @@ export async function listPaymentsAdmin(input: {
   };
 }
 
-export async function listWalletsAdmin(input: { page?: number; search?: string }) {
+export async function listWalletTransactionsAdmin(input: {
+  page?: number;
+  search?: string;
+  type?: WalletTxType | "all";
+}) {
   const db = await getDb();
   const page = Math.max(1, input.page ?? 1);
   const pageSize = 25;
+  const conditions = [];
   const search = input.search?.trim();
-  const where = search
-    ? or(
-        ilike(users.email, `%${search}%`),
-        ilike(users.name, `%${search}%`),
-        ilike(users.phone, `%${search}%`),
-      )
-    : undefined;
+  if (search) {
+    const pattern = `%${search}%`;
+    conditions.push(
+      or(
+        ilike(users.email, pattern),
+        ilike(users.name, pattern),
+        ilike(users.phone, pattern),
+        ilike(walletTransactions.description, pattern),
+        ilike(walletTransactions.referenceId, pattern),
+      ),
+    );
+  }
+  if (input.type && input.type !== "all") conditions.push(eq(walletTransactions.type, input.type));
+  const where = conditions.length ? and(...conditions) : undefined;
 
   const [rows, totalRows] = await Promise.all([
     db
       .select({
-        userId: wallets.userId,
-        email: users.email,
-        name: users.name,
-        phone: users.phone,
-        balance: wallets.balance,
-        updatedAt: wallets.updatedAt,
+        id: walletTransactions.id,
+        userId: walletTransactions.userId,
+        type: walletTransactions.type,
+        amount: walletTransactions.amount,
+        balanceBefore: walletTransactions.balanceBefore,
+        balanceAfter: walletTransactions.balanceAfter,
+        status: walletTransactions.status,
+        referenceType: walletTransactions.referenceType,
+        referenceId: walletTransactions.referenceId,
+        description: walletTransactions.description,
+        createdAt: walletTransactions.createdAt,
+        customerName: users.name,
+        customerEmail: users.email,
       })
-      .from(wallets)
-      .innerJoin(users, eq(users.id, wallets.userId))
+      .from(walletTransactions)
+      .innerJoin(users, eq(users.id, walletTransactions.userId))
       .where(where)
-      .orderBy(desc(wallets.balance))
+      .orderBy(desc(walletTransactions.createdAt))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ value: count() }).from(wallets).innerJoin(users, eq(users.id, wallets.userId)).where(where),
+    db
+      .select({ value: count() })
+      .from(walletTransactions)
+      .innerJoin(users, eq(users.id, walletTransactions.userId))
+      .where(where),
   ]);
 
   const total = Number(totalRows[0]?.value ?? 0);
