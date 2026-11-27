@@ -30,6 +30,10 @@ export const btnSecondary =
   "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 text-sm font-bold text-gray-700 shadow-sm outline-none transition hover:-translate-y-px hover:border-gray-300 hover:bg-gray-50 focus-visible:ring-4 focus-visible:ring-gray-200 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50";
 export const btnDanger =
   "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3.5 text-sm font-bold text-red-600 shadow-sm outline-none transition hover:border-red-300 hover:bg-red-50 focus-visible:ring-4 focus-visible:ring-red-100 disabled:pointer-events-none disabled:opacity-50";
+export const btnOnDark =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 text-sm font-bold text-white shadow-sm outline-none backdrop-blur transition hover:-translate-y-px hover:border-white/25 hover:bg-white/20 focus-visible:ring-4 focus-visible:ring-white/20 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50";
+export const btnOnDarkPrimary =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-black text-gray-950 shadow-[0_8px_24px_rgba(0,0,0,0.18)] outline-none transition hover:-translate-y-px hover:bg-gray-50 focus-visible:ring-4 focus-visible:ring-white/30 active:translate-y-0 disabled:pointer-events-none disabled:opacity-50";
 
 export const thCls =
   "whitespace-nowrap px-4 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-gray-500";
@@ -100,6 +104,125 @@ export function PageHeader({
         {description && <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-gray-500 sm:ml-4">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    </header>
+  );
+}
+
+const PAGE_IDENTITY_TONES = {
+  orange: {
+    shell: "from-[#35130a] via-[#8f2d0d] to-[#f96000]",
+    glow: "bg-orange-300/25",
+    icon: "bg-orange-400/20 text-orange-100 ring-orange-200/25",
+    signal: "bg-orange-300",
+  },
+  amber: {
+    shell: "from-[#382006] via-[#9a5a05] to-[#f59e0b]",
+    glow: "bg-yellow-200/25",
+    icon: "bg-amber-300/15 text-amber-50 ring-amber-100/25",
+    signal: "bg-yellow-200",
+  },
+  blue: {
+    shell: "from-[#071a3d] via-[#123f86] to-[#2877e8]",
+    glow: "bg-sky-300/25",
+    icon: "bg-sky-300/15 text-sky-100 ring-sky-200/25",
+    signal: "bg-sky-300",
+  },
+  emerald: {
+    shell: "from-[#052b23] via-[#08745c] to-[#10b981]",
+    glow: "bg-emerald-200/25",
+    icon: "bg-emerald-300/15 text-emerald-50 ring-emerald-100/25",
+    signal: "bg-emerald-300",
+  },
+  teal: {
+    shell: "from-[#042f2e] via-[#0f766e] to-[#14b8a6]",
+    glow: "bg-cyan-200/25",
+    icon: "bg-teal-300/15 text-teal-50 ring-teal-100/25",
+    signal: "bg-teal-200",
+  },
+  violet: {
+    shell: "from-[#1d123d] via-[#5b2da4] to-[#8b5cf6]",
+    glow: "bg-fuchsia-300/20",
+    icon: "bg-violet-300/15 text-violet-50 ring-violet-100/25",
+    signal: "bg-violet-300",
+  },
+  rose: {
+    shell: "from-[#3f1027] via-[#a82458] to-[#f43f5e]",
+    glow: "bg-rose-200/25",
+    icon: "bg-rose-300/15 text-rose-50 ring-rose-100/25",
+    signal: "bg-rose-300",
+  },
+  cyan: {
+    shell: "from-[#052b33] via-[#08778a] to-[#06b6d4]",
+    glow: "bg-cyan-200/25",
+    icon: "bg-cyan-300/15 text-cyan-50 ring-cyan-100/25",
+    signal: "bg-cyan-200",
+  },
+  indigo: {
+    shell: "from-[#151747] via-[#3730a3] to-[#6366f1]",
+    glow: "bg-indigo-200/25",
+    icon: "bg-indigo-300/15 text-indigo-50 ring-indigo-100/25",
+    signal: "bg-indigo-200",
+  },
+  slate: {
+    shell: "from-[#111827] via-[#334155] to-[#64748b]",
+    glow: "bg-slate-200/20",
+    icon: "bg-white/10 text-slate-50 ring-white/20",
+    signal: "bg-slate-200",
+  },
+} as const;
+
+export function PageIdentity({
+  title,
+  description,
+  eyebrow,
+  icon: Icon,
+  tone,
+  actions,
+  back,
+  signal,
+}: {
+  title: ReactNode;
+  description: ReactNode;
+  eyebrow: string;
+  icon: LucideIcon;
+  tone: keyof typeof PAGE_IDENTITY_TONES;
+  actions?: ReactNode;
+  back?: { href: string; label: string };
+  signal?: string;
+}) {
+  const colors = PAGE_IDENTITY_TONES[tone];
+  return (
+    <header className={cn("relative isolate overflow-hidden rounded-[26px] bg-gradient-to-br p-5 text-white shadow-[0_18px_55px_rgba(15,23,42,0.16)] sm:p-7", colors.shell)}>
+      <div className={cn("pointer-events-none absolute -right-14 -top-24 h-64 w-64 rounded-full blur-3xl", colors.glow)} />
+      <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:32px_32px]" />
+      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 max-w-4xl">
+          {back && (
+            <Link href={back.href} className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-white/60 transition hover:text-white">
+              <ArrowLeft className="h-3.5 w-3.5" /> {back.label}
+            </Link>
+          )}
+          <div className="flex items-start gap-4">
+            <span className={cn("mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset backdrop-blur", colors.icon)}>
+              <Icon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/55">{eyebrow}</p>
+                {signal && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-black/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-white/75 ring-1 ring-inset ring-white/10">
+                    <span className={cn("h-1.5 w-1.5 rounded-full shadow-[0_0_8px_currentColor]", colors.signal)} /> {signal}
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-1.5 text-[1.85rem] font-black leading-tight tracking-[-0.035em] text-white sm:text-4xl">{title}</h1>
+              <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-white/65">{description}</p>
+            </div>
+          </div>
+        </div>
+        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{actions}</div>}
+      </div>
     </header>
   );
 }

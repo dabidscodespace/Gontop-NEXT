@@ -1,22 +1,7 @@
 import Link from "next/link";
-import {
-  BarChart3,
-  CreditCard,
-  Image as ImageIcon,
-  KeyRound,
-  LayoutGrid,
-  Package,
-  Settings2,
-  ShieldCheck,
-  Upload,
-  Users,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { SessionAdmin } from "@/lib/auth";
-import { hasPermission, type Permission } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 type WorkspaceItem = {
@@ -26,19 +11,30 @@ type WorkspaceItem = {
   href: string;
   icon?: LucideIcon;
   badge?: ReactNode;
-  permission?: Permission;
 };
 
+const ACTIVE_TONES = {
+  dark: "bg-gray-950 text-white shadow-sm",
+  orange: "bg-orange-600 text-white shadow-sm shadow-orange-500/20",
+  emerald: "bg-emerald-600 text-white shadow-sm shadow-emerald-500/20",
+  teal: "bg-teal-600 text-white shadow-sm shadow-teal-500/20",
+  violet: "bg-violet-600 text-white shadow-sm shadow-violet-500/20",
+  indigo: "bg-indigo-600 text-white shadow-sm shadow-indigo-500/20",
+} as const;
+
+/** Local section navigation only. Cross-page navigation belongs in the sidebar. */
 export function WorkspaceNav({
   label,
   items,
   active,
   compact = false,
+  tone = "dark",
 }: {
   label: string;
   items: WorkspaceItem[];
   active: string;
   compact?: boolean;
+  tone?: keyof typeof ACTIVE_TONES;
 }) {
   return (
     <nav
@@ -56,9 +52,7 @@ export function WorkspaceNav({
             className={cn(
               "group flex shrink-0 items-center gap-2.5 rounded-xl outline-none transition focus-visible:ring-4 focus-visible:ring-accent-orange/15",
               compact ? "min-h-9 px-3 py-2" : "min-h-12 min-w-[150px] flex-1 px-3 py-2.5",
-              current
-                ? "bg-gray-950 text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-950",
+              current ? ACTIVE_TONES[tone] : "text-gray-600 hover:bg-gray-50 hover:text-gray-950",
             )}
           >
             {Icon && (
@@ -67,7 +61,7 @@ export function WorkspaceNav({
                   "flex shrink-0 items-center justify-center rounded-lg",
                   compact ? "h-6 w-6" : "h-8 w-8",
                   current
-                    ? "bg-white/10 text-accent-orange"
+                    ? "bg-white/15 text-white"
                     : "bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-accent-orange group-hover:shadow-sm",
                 )}
               >
@@ -78,11 +72,11 @@ export function WorkspaceNav({
               <span className={cn("flex items-center gap-2 font-extrabold", compact ? "text-xs" : "text-[13px]")}>
                 <span className="truncate">{item.label}</span>
                 {item.badge !== undefined && (
-                  <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-black tabular-nums", current ? "bg-white/10 text-white/70" : "bg-gray-100 text-gray-500")}>{item.badge}</span>
+                  <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-black tabular-nums", current ? "bg-white/15 text-white/80" : "bg-gray-100 text-gray-500")}>{item.badge}</span>
                 )}
               </span>
               {!compact && item.description && (
-                <span className={cn("mt-0.5 block truncate text-[10px] font-medium", current ? "text-white/45" : "text-gray-400")}>{item.description}</span>
+                <span className={cn("mt-0.5 block truncate text-[10px] font-medium", current ? "text-white/65" : "text-gray-400")}>{item.description}</span>
               )}
             </span>
           </Link>
@@ -90,135 +84,4 @@ export function WorkspaceNav({
       })}
     </nav>
   );
-}
-
-function allowed(admin: SessionAdmin, items: WorkspaceItem[]) {
-  return items.filter((item) => !item.permission || hasPermission(admin, item.permission));
-}
-
-export function CustomerMoneyNav({
-  admin,
-  active,
-}: {
-  admin: SessionAdmin;
-  active: "customers" | "payments" | "wallets" | "reports";
-}) {
-  const items: WorkspaceItem[] = [
-    {
-      key: "customers",
-      label: "Customers",
-      description: "Accounts, orders and access",
-      href: "/admin/customers",
-      icon: Users,
-      permission: "customers.view",
-    },
-    {
-      key: "payments",
-      label: "Payments",
-      description: "Gateway records and verification",
-      href: "/admin/payments",
-      icon: CreditCard,
-      permission: "payments.view",
-    },
-    {
-      key: "wallets",
-      label: "Wallets",
-      description: "Balances and ledger activity",
-      href: "/admin/wallets",
-      icon: Wallet,
-      permission: "wallet.manage",
-    },
-    {
-      key: "reports",
-      label: "Reports",
-      description: "Revenue, sales and stock",
-      href: "/admin/reports",
-      icon: BarChart3,
-      permission: "reports.view",
-    },
-  ];
-
-  return <WorkspaceNav label="Customers and money" items={allowed(admin, items)} active={active} />;
-}
-
-export function CommerceNav({
-  admin,
-  active,
-}: {
-  admin: SessionAdmin;
-  active: "products" | "categories" | "methods" | "banners";
-}) {
-  const items: WorkspaceItem[] = [
-    {
-      key: "products",
-      label: "Products",
-      description: "Products, packages and pricing",
-      href: "/admin/products",
-      icon: Package,
-      permission: "products.manage",
-    },
-    {
-      key: "categories",
-      label: "Categories",
-      description: "Sections and Popular Games",
-      href: "/admin/categories",
-      icon: LayoutGrid,
-      permission: "categories.manage",
-    },
-    {
-      key: "methods",
-      label: "Top-up methods",
-      description: "Checkout account identifiers",
-      href: "/admin/topup-methods",
-      icon: KeyRound,
-      permission: "products.manage",
-    },
-    {
-      key: "banners",
-      label: "Banners",
-      description: "Homepage carousel slides",
-      href: "/admin/banners",
-      icon: ImageIcon,
-      permission: "banners.manage",
-    },
-  ];
-
-  return <WorkspaceNav label="Commerce workspace" items={allowed(admin, items)} active={active} />;
-}
-
-export function SystemNav({
-  admin,
-  active,
-}: {
-  admin: SessionAdmin;
-  active: "settings" | "migration" | "team";
-}) {
-  const items: WorkspaceItem[] = [
-    {
-      key: "settings",
-      label: "Store settings",
-      description: "Features, limits and integrations",
-      href: "/admin/settings",
-      icon: Settings2,
-      permission: "settings.manage",
-    },
-    {
-      key: "migration",
-      label: "Data migration",
-      description: "Preview, import and export CSV",
-      href: "/admin/import",
-      icon: Upload,
-      permission: "csv.manage",
-    },
-    {
-      key: "team",
-      label: "Team access",
-      description: "Staff roles and permissions",
-      href: "/admin/admins",
-      icon: ShieldCheck,
-      permission: "staff.manage",
-    },
-  ];
-
-  return <WorkspaceNav label="System administration" items={allowed(admin, items)} active={active} />;
 }

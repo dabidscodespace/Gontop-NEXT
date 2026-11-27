@@ -19,21 +19,18 @@ import { ActionForm } from "@/components/action-form";
 import {
   Card,
   EmptyState,
-  Field,
-  inputCls,
-  PageHeader,
-  selectCls,
+  PageIdentity,
   StatCard,
-  textareaCls,
 } from "@/components/admin/ui";
-import { CustomerMoneyNav, WorkspaceNav } from "@/components/admin/workspace-nav";
+import { WorkspaceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
+import { WalletAdjustmentModal } from "@/components/admin/wallet-adjustment-modal";
 import { StatusBadge } from "@/components/status-badge";
 import { getSession } from "@/lib/auth";
 import { formatBDT } from "@/lib/money";
 import { hasPermission } from "@/lib/permissions";
 import { getCustomerDetail } from "@/lib/services/admin";
-import { adjustWalletAction, toggleCustomerAction } from "../../actions";
+import { toggleCustomerAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -63,20 +60,21 @@ export default async function AdminCustomerDetailPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageIdentity
         eyebrow="Customer profile"
-        back={canViewCustomer ? { href: "/admin/customers", label: "Customer directory" } : { href: "/admin/wallets", label: "Wallets" }}
+        tone="teal"
+        icon={UserRound}
+        back={canViewCustomer ? { href: "/admin/customers", label: "Back to customers" } : { href: "/admin/wallets", label: "Back to wallets" }}
         title={data.user.name || "Unnamed customer"}
-        description={canViewCustomer ? "Account details, order relationship, wallet ledger and access controls in one place." : "Review this customer's wallet balance and immutable ledger."}
+        description={canViewCustomer ? "A focused account workspace for identity, orders, wallet history and access." : "Review this customer's wallet balance and immutable ledger."}
+        signal={data.user.isActive ? "Account active" : "Account disabled"}
         actions={<AccountStatus active={data.user.isActive} />}
       />
-
-      <CustomerMoneyNav admin={admin} active={canViewCustomer ? "customers" : "wallets"} />
 
       <Card>
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
           <div className="flex min-w-0 items-center gap-4 lg:w-[310px]">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-orange to-orange-400 text-2xl font-extrabold text-white shadow-lg shadow-orange-500/25">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-700 to-teal-400 text-2xl font-extrabold text-white shadow-lg shadow-teal-500/25">
               {initial}
             </span>
             <div className="min-w-0">
@@ -98,6 +96,7 @@ export default async function AdminCustomerDetailPage({
         label="Customer profile sections"
         active={tab}
         compact
+        tone="teal"
         items={canViewCustomer ? [
           { key: "overview", label: "Overview", href: profileHref, icon: UserRound },
           { key: "orders", label: "Orders", href: `${profileHref}?tab=orders`, icon: ReceiptText, badge: data.summary.orders },
@@ -190,29 +189,13 @@ export default async function AdminCustomerDetailPage({
           <div className="space-y-5">
             <StatCard label="Current balance" value={formatBDT(data.balance)} hint={`${data.transactions.length} recent ledger entr${data.transactions.length === 1 ? "y" : "ies"}`} icon={Wallet} tone="emerald" />
             {hasPermission(admin, "wallet.manage") ? (
-              <Card title="Adjust wallet" icon={Wallet} description="Every adjustment needs a reason and is written to the audit trail.">
-                <ActionForm
-                  action={adjustWalletAction}
-                  submitLabel="Apply adjustment"
-                  confirm="Apply this wallet adjustment?"
-                  className="space-y-4"
-                >
-                  <input type="hidden" name="userId" value={data.user.id} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Amount (৳)">
-                      <input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required className={inputCls} />
-                    </Field>
-                    <Field label="Direction">
-                      <select name="direction" className={selectCls}>
-                        <option value="credit">Credit (+)</option>
-                        <option value="debit">Debit (−)</option>
-                      </select>
-                    </Field>
-                  </div>
-                  <Field label="Reason" hint="This explanation remains attached to the ledger entry.">
-                    <textarea name="reason" rows={3} required placeholder="Why is this adjustment needed?" className={textareaCls} />
-                  </Field>
-                </ActionForm>
+              <Card title="Balance controls" icon={ShieldCheck} description="Sensitive money movement opens in a protected review flow instead of living in the ledger.">
+                <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-600">Current customer balance</p>
+                  <p className="mt-1 text-2xl font-black tracking-tight text-emerald-950">{formatBDT(data.balance)}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-700">Credits and debits are immutable, permission-gated and written to the audit trail.</p>
+                </div>
+                <WalletAdjustmentModal userId={data.user.id} customerName={data.user.name || data.user.email} currentBalance={Number(data.balance)} />
               </Card>
             ) : (
               <Card title="Ledger protected" icon={ShieldCheck}>

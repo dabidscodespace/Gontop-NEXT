@@ -14,15 +14,14 @@ import {
 import { ActionForm } from "@/components/action-form";
 import { ImageField } from "@/components/image-field";
 import {
-  btnSecondary,
+  btnOnDark,
   Card,
   EmptyState,
   Field,
   inputCls,
-  PageHeader,
+  PageIdentity,
   StatCard,
 } from "@/components/admin/ui";
-import { CommerceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
@@ -47,19 +46,20 @@ export default async function AdminBannersPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Storefront merchandising"
-        title="Homepage banners"
-        description="Build the carousel, control its order, and keep hidden drafts without losing them."
+      <PageIdentity
+        eyebrow="Homepage creative studio"
+        title="Banners"
+        description="Design and sequence the storefront carousel in its own visual workspace, with live and hidden campaigns clearly separated."
+        icon={ImageIcon}
+        tone="rose"
+        signal={`${live} live slide${live === 1 ? "" : "s"}`}
         actions={
           <>
-            <a href="/" target="_blank" rel="noreferrer" className={btnSecondary}><ExternalLink className="h-4 w-4" /> View storefront</a>
-            {editing && <Link href="/admin/banners" className={btnSecondary}><Plus className="h-4 w-4" /> New banner</Link>}
+            <a href="/" target="_blank" rel="noreferrer" className={btnOnDark}><ExternalLink className="h-4 w-4" /> View storefront</a>
+            {editing && <Link href="/admin/banners" className={btnOnDark}><Plus className="h-4 w-4" /> New banner</Link>}
           </>
         }
       />
-
-      <CommerceNav admin={admin} active="banners" />
 
       <div className="grid grid-cols-3 gap-3">
         <StatCard label="All slides" value={banners.length.toLocaleString()} hint="Saved carousel banners" icon={ImageIcon} tone="blue" />

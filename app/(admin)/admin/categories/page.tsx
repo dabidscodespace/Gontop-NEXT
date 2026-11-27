@@ -6,12 +6,13 @@ import { ActionForm } from "@/components/action-form";
 import { GameLibrary } from "@/components/admin/game-library";
 import { NoAccess } from "@/components/admin/no-access";
 import {
+  btnOnDark,
   btnSecondary,
   Card,
   EmptyState,
   Field,
   inputCls,
-  PageHeader,
+  PageIdentity,
 } from "@/components/admin/ui";
 import { ImageField } from "@/components/image-field";
 import { getSession } from "@/lib/auth";
@@ -62,10 +63,14 @@ export default async function AdminCategoriesPage({ searchParams }: { searchPara
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Storefront organization"
+      <PageIdentity
+        eyebrow="Storefront taxonomy"
         title="Categories"
-        description="Standard product sections and the special Popular Games modal are managed separately."
+        description="Shape how shoppers discover the catalogue. Product sections and the Popular Games experience each keep their own focused editor."
+        icon={LayoutGrid}
+        tone="amber"
+        signal={`${productCategories.length} catalogue sections`}
+        actions={<Link href={activeTab === "popular" ? "/admin/categories?tab=popular&view=library" : "/admin/categories"} className={btnOnDark}>{activeTab === "popular" ? <Gamepad2 className="h-4 w-4" /> : <Plus className="h-4 w-4" />} {activeTab === "popular" ? "Open game library" : "New category"}</Link>}
       />
 
       <PrimaryTabs active={activeTab} categoryCount={productCategories.length} popularCount={popularSections.length} />

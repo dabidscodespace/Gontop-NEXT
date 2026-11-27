@@ -2,11 +2,11 @@
 
 ## Current Stage
 
-Core commerce safeguards and the complete admin workspace reorganization are implemented and tested. Remaining known infrastructure limitations are listed under Known Issues.
+Core commerce safeguards, the admin workspace reorganization, and the distinct visual/interaction refresh are implemented and tested. Remaining known infrastructure limitations are listed under Known Issues.
 
 ## Current Task
 
-Admin information-architecture follow-up — customer, money, storefront-support, migration, settings, reporting, and team workspaces (done).
+Distinct admin-area identities and purpose-built sensitive-action dialogs (done; live preview ready for owner review).
 
 ## Completed
 
@@ -50,7 +50,7 @@ Nothing.
 
 ## Pending
 
-No implementation work is pending for the requested admin reorganization. The live preview remains available for final owner visual review.
+No implementation work is pending for the requested admin identity and interaction refresh. The live preview remains available for final owner visual review.
 
 ## Audit Findings
 
@@ -217,3 +217,12 @@ Stages 1–5 implemented, migrations 0010–0011 additive and applied in tests, 
 - Settings and team access: reorganized settings by identity, limits, polling, feature switches, gateway health, and server-only environment; grouped staff permissions by operational domain and added role/access/login summaries. All original action contracts and last-owner safeguards remain intact.
 - Service coverage added for customer summaries, customer lifetime metrics, payment status/flow summaries, wallet balance context, and cross-customer ledger filtering.
 - Verification: ESLint clean, TypeScript clean, production build clean, `git diff --check` clean, and authenticated HTTP smoke checks passed for all redesigned routes, filters, report tabs, migration tabs, and all three customer-profile tabs. Tests: flows 134/134, lifecycle 55/55, catalogue 23/23, dashboard 48/48 — 260/260 total.
+
+## Admin identity and interaction refresh
+- Removed the cross-area Customers & Money, Commerce, and System workspace strips. The sidebar remains the global navigator; in-page navigation is now reserved for genuinely local views such as a customer profile, wallet balances/activity, report modes, and migration types.
+- Added a high-impact `PageIdentity` system with page-specific color, icon, live signal, contextual copy, and dark-surface actions. Dashboard, Orders, Products and its editor, Categories, Customers, Payments, Wallets, Reports, Banners, Top-up methods, Migration, Settings, and Team access now open with distinct identities instead of the same generic heading treatment.
+- Replaced the exposed order refund form with a purpose-built modal available from both order detail and queue quick view. It supports partial amounts, wallet vs original-gateway destination, externally completed gateway refunds, dynamic totals, irreversible-action warning, action feedback, focus restoration, and automatic refresh while retaining the existing permission, locking, cap, ledger, gateway, history, and audit workflows.
+- Replaced inline pending gateway settlement forms with a focused reconciliation modal for completed vs failed outcomes and mandatory gateway references.
+- Replaced the inline wallet adjustment form with a protected credit/debit modal. It previews the resulting balance, prevents an overdraw in the UI, requires an immutable audit reason, and still relies on the existing row-locked, non-negative server workflow.
+- Refund history is now a scan-friendly activity list with destination, status, reference, reason, timestamp, and contextual reconciliation action.
+- Verification: TypeScript, ESLint, production build, and `git diff --check` pass. All authenticated admin routes render over the production server, including refund and wallet-adjustment triggers. Tests remain 260/260: flows 134/134, lifecycle 55/55, catalogue 23/23, dashboard 48/48.

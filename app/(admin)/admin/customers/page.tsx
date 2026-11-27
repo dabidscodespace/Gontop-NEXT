@@ -11,12 +11,11 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { CustomerMoneyNav } from "@/components/admin/workspace-nav";
 import {
   btnSecondary,
   Card,
   EmptyState,
-  PageHeader,
+  PageIdentity,
   Pagination,
   SearchBar,
   StatCard,
@@ -81,13 +80,14 @@ export default async function AdminCustomersPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Customer relationships"
+      <PageIdentity
+        eyebrow="Customer directory"
         title="Customers"
-        description="Find an account, understand its order and wallet history, then take the right action from one profile."
+        description="Every account has its own story. Find the customer, understand their history, and manage access without mixing in payment or wallet operations."
+        icon={Users}
+        tone="teal"
+        signal={`${result.summary.active.toLocaleString()} active accounts`}
       />
-
-      <CustomerMoneyNav admin={admin} active="customers" />
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
         <Card padded={false} className="overflow-hidden">

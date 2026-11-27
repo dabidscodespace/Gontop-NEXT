@@ -32,12 +32,13 @@ import { FieldsEditor } from "@/components/admin/fields-editor";
 import { LifecycleActions } from "@/components/admin/lifecycle-actions";
 import { RowAction } from "@/components/admin/row-action";
 import {
+  btnOnDark,
   btnSecondary,
   Card,
   EmptyState,
   Field,
   inputCls,
-  PageHeader,
+  PageIdentity,
   selectCls,
   textareaCls,
 } from "@/components/admin/ui";
@@ -119,12 +120,16 @@ export function ProductEditor({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Product workspace"
+      <PageIdentity
+        eyebrow={record ? "Product studio" : "New catalogue entry"}
         back={{ href: "/admin/products", label: "Back to products" }}
         title={record?.name ?? "Create product"}
+        description={record ? "Edit the storefront story, package architecture and fulfilment rules in one product-focused studio." : "Define the customer-facing offer first; packages and pricing unlock after the product is saved."}
+        icon={PackagePlus}
+        tone="indigo"
+        signal={record ? `${record.status} · ${record.availability}` : "Unsaved draft"}
         actions={record?.status === "published" ? (
-          <a href={`/product/${record.slug}`} target="_blank" rel="noreferrer" className={btnSecondary}>
+          <a href={`/product/${record.slug}`} target="_blank" rel="noreferrer" className={btnOnDark}>
             <ExternalLink className="h-4 w-4" /> View on store
           </a>
         ) : undefined}

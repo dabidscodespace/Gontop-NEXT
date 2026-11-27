@@ -11,8 +11,8 @@ import {
   Undo2,
 } from "lucide-react";
 
-import { Card, EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
-import { CustomerMoneyNav, WorkspaceNav } from "@/components/admin/workspace-nav";
+import { Card, EmptyState, PageIdentity, StatCard } from "@/components/admin/ui";
+import { WorkspaceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { formatBDT } from "@/lib/money";
@@ -41,13 +41,14 @@ export default async function AdminReportsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageIdentity
         eyebrow="Business intelligence"
         title="Reports"
-        description="Understand recognized revenue, payment performance, product demand and stock risk without mixing unrelated tasks."
+        description="A dedicated analytics studio for recognized revenue, product demand and inventory risk—separate from operational ledgers."
+        icon={BarChart3}
+        tone="violet"
+        signal={`${formatBDT(reports.revenue)} recognized`}
       />
-
-      <CustomerMoneyNav admin={admin} active="reports" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Recognized revenue" value={formatBDT(reports.revenue)} hint="Processing, on-hold & completed" icon={TrendingUp} tone="orange" />
@@ -60,6 +61,7 @@ export default async function AdminReportsPage({
         label="Report sections"
         active={view}
         compact
+        tone="violet"
         items={[
           { key: "overview", label: "Revenue overview", href: "/admin/reports", icon: TrendingUp },
           { key: "products", label: "Product performance", href: "/admin/reports?view=products", icon: BarChart3, badge: reports.topProducts.length },

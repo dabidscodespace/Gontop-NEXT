@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail, Phone, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CircleDollarSign, Mail, Phone, ShieldCheck, ShoppingBag } from "lucide-react";
 
 import {
-  refundAction,
-  resolvePendingRefundAction,
   verifyPaymentAction,
   addOrderNoteAction,
   deleteOrderNoteAction,
@@ -13,8 +11,7 @@ import {
 import { ActionForm } from "@/components/action-form";
 import {
   Card,
-  PageHeader,
-  inputCls,
+  PageIdentity,
   selectCls,
   tdCls,
   textareaCls,
@@ -22,6 +19,7 @@ import {
 } from "@/components/admin/ui";
 import { CopyButton } from "@/components/admin/copy-button";
 import { OrderStatusPanel } from "@/components/admin/order-status-panel";
+import { RefundModal, ResolveRefundModal } from "@/components/admin/refund-modal";
 import { NoAccess } from "@/components/admin/no-access";
 import { StatusBadge } from "@/components/status-badge";
 import { getSession } from "@/lib/auth";
@@ -164,9 +162,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Order workspace"
-        back={{ href: "/admin/orders", label: "Orders" }}
+      <PageIdentity
+        eyebrow="Order operations"
+        tone="orange"
+        icon={ShoppingBag}
+        back={{ href: "/admin/orders", label: "Back to order queue" }}
+        signal={`Payment ${order.paymentStatus.replace(/_/g, " ")}`}
         title={
           <span className="inline-flex items-center gap-2">
             Order #{order.orderNumber}
@@ -177,11 +178,25 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <span className="inline-flex flex-wrap items-center gap-2">
             <span className="font-mono">{order.publicId}</span>
             <CopyButton value={order.publicId} compact label="Copy public order ID" />
-            <span className="text-gray-300">·</span>
+            <span className="text-white/25">·</span>
             Placed {dateTime(order.createdAt)}
           </span>
         }
-        actions={<StatusBadge status={order.status} className="px-3 py-1.5" />}
+        actions={
+          <>
+            <StatusBadge status={order.status} className="border-white/20 bg-white/90 px-3 py-1.5 shadow-sm" />
+            {canRefundOrder && (
+              <RefundModal
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+                customerName={customerName || customerEmail}
+                total={Number(order.total)}
+                remaining={remaining}
+                triggerVariant="light"
+              />
+            )}
+          </>
+        }
       />
 
       <Card title="Order overview" icon={ShoppingBag} padded={false}>
@@ -308,77 +323,41 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </Card>
       ) : null}
 
-      {canRefundOrder ? (
-        <div id="refund">
-          <Card title="Refund" description={`Refundable: ${formatBDT(remaining)} of ${formatBDT(order.total)}.`}>
-            <ActionForm action={refundAction} submitLabel="Issue refund" confirm="Issue this refund? This cannot be undone." buttonClassName="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">
-              <input type="hidden" name="orderId" value={order.id} />
-              <div className="grid gap-4 md:grid-cols-3">
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">Amount (BDT)</span>
-                  <input name="amount" type="number" step="0.01" min="0.01" max={remaining} defaultValue={remaining.toFixed(2)} required className={inputCls} />
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">Method</span>
-                  <select name="method" defaultValue="wallet" className={selectCls}>
-                    <option value="wallet">Customer wallet</option>
-                    <option value="gateway">Gateway refund</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-gray-600">External reference</span>
-                  <input name="externalReference" maxLength={200} placeholder="Optional" className={inputCls} />
-                </label>
-              </div>
-              <label className="mt-4 block">
-                <span className="mb-1.5 block text-xs font-semibold text-gray-600">Reason</span>
-                <textarea name="reason" rows={2} maxLength={500} required className={textareaCls} />
-              </label>
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" name="recordOnly" value="1" className="h-4 w-4 accent-[#f96000]" />
-                Record only (the money was already returned outside the system)
-              </label>
-            </ActionForm>
-          </Card>
-        </div>
-      ) : null}
-
       {refunds.length > 0 ? (
-        <Card title="Refunds" padded={false}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left">
-              <thead className="bg-gray-50"><tr>
-                <th className={thCls}>Date</th><th className={thCls}>Amount</th><th className={thCls}>Method</th><th className={thCls}>Status</th><th className={thCls}>Reason</th>
-              </tr></thead>
-              <tbody className="divide-y divide-gray-100">
-                {refunds.map((r) => (
-                  <tr key={r.id}>
-                    <td className={tdCls}>{dateTime(r.createdAt)}</td>
-                    <td className={`${tdCls} font-bold`}>{formatBDT(r.amount)}</td>
-                    <td className={tdCls}>{r.method}</td>
-                    <td className={tdCls}>
-                      {r.status}
-                      {canRefund && r.status === "pending" && r.method === "gateway" ? (
-                        <div className="mt-2 space-y-2">
-                          <p className="text-xs text-gray-500">Stuck pending. Confirm the outcome from the gateway.</p>
-                          <ActionForm action={resolvePendingRefundAction} submitLabel="Mark completed" className="flex flex-wrap items-center gap-2">
-                            <input type="hidden" name="refundId" value={r.id} />
-                            <input type="hidden" name="outcome" value="completed" />
-                            <input name="gatewayReference" required maxLength={200} placeholder="Gateway reference" className={inputCls} />
-                          </ActionForm>
-                          <ActionForm action={resolvePendingRefundAction} submitLabel="Mark failed" confirm="Mark this refund as failed? The amount becomes refundable again." className="flex flex-wrap items-center gap-2">
-                            <input type="hidden" name="refundId" value={r.id} />
-                            <input type="hidden" name="outcome" value="failed" />
-                          </ActionForm>
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className={tdCls}>{r.reason}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Card
+          title="Refund history"
+          icon={CircleDollarSign}
+          description={`${formatBDT(refunded)} returned or reserved · ${formatBDT(remaining)} remains refundable.`}
+          padded={false}
+        >
+          <ul className="divide-y divide-gray-100">
+            {refunds.map((refund) => {
+              const statusTone = refund.status === "completed"
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                : refund.status === "failed"
+                  ? "bg-red-50 text-red-700 ring-red-200"
+                  : "bg-amber-50 text-amber-700 ring-amber-200";
+              return (
+                <li key={refund.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${refund.method === "wallet" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"}`}>
+                    <CircleDollarSign className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-black text-gray-950">{formatBDT(refund.amount)}</p>
+                      <span className="text-xs font-semibold capitalize text-gray-500">to {refund.method === "wallet" ? "customer wallet" : "original gateway"}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-black capitalize ring-1 ring-inset ${statusTone}`}>{refund.status}</span>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-600">{refund.reason}</p>
+                    <p className="mt-1 text-[10px] text-gray-400">{dateTime(refund.createdAt)}{refund.gatewayReference ? ` · Reference ${refund.gatewayReference}` : ""}</p>
+                  </div>
+                  {canRefund && refund.status === "pending" && refund.method === "gateway" && (
+                    <div className="shrink-0"><ResolveRefundModal refundId={refund.id} amount={Number(refund.amount)} /></div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </Card>
       ) : null}
 

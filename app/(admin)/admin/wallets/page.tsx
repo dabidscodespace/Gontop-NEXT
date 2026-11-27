@@ -15,7 +15,7 @@ import {
   btnSecondary,
   Card,
   EmptyState,
-  PageHeader,
+  PageIdentity,
   Pagination,
   SearchBar,
   selectCls,
@@ -23,7 +23,7 @@ import {
   tdCls,
   thCls,
 } from "@/components/admin/ui";
-import { CustomerMoneyNav, WorkspaceNav } from "@/components/admin/workspace-nav";
+import { WorkspaceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { WALLET_TX_TYPES, type WalletTxType } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -75,13 +75,14 @@ export default async function AdminWalletsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Wallet operations"
+      <PageIdentity
+        eyebrow="Stored-value ledger"
         title="Wallets"
-        description="Review customer funds and follow every balance change through the immutable wallet ledger."
+        description="A protected workspace for customer balances and every credit or debit that produced them. Wallet operations stay separate from gateway payments."
+        icon={Wallet}
+        tone="emerald"
+        signal={`${formatBDT(totals.total)} held`}
       />
-
-      <CustomerMoneyNav admin={admin} active="wallets" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Customer funds" value={formatBDT(totals.total)} hint="Current balance total" icon={CircleDollarSign} tone="emerald" />
@@ -94,6 +95,7 @@ export default async function AdminWalletsPage({
         label="Wallet views"
         active={view}
         compact
+        tone="emerald"
         items={[
           { key: "balances", label: "Customer balances", href: "/admin/wallets", icon: Wallet, badge: totals.count },
           { key: "activity", label: "Ledger activity", href: "/admin/wallets?view=activity", icon: ArrowDownUp, badge: view === "activity" ? activityResult?.total : undefined },

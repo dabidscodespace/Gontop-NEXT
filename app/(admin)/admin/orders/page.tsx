@@ -5,7 +5,7 @@ import { AlertTriangle, ShoppingBag } from "lucide-react";
 import { NoAccess } from "@/components/admin/no-access";
 import { OrderQuickView } from "@/components/admin/order-quick-view";
 import { OrdersTable, type OrderRow } from "@/components/admin/orders-table";
-import { Card, PageHeader, Pagination, SearchBar } from "@/components/admin/ui";
+import { Card, PageIdentity, Pagination, SearchBar } from "@/components/admin/ui";
 import type { OrderStatus } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { formatBDT } from "@/lib/money";
@@ -16,6 +16,7 @@ import {
   getAdminOrders,
   getCustomerPaidSummary,
   getOrderStatusCounts,
+  listOrderRefunds,
   ORDER_STATUS_LABELS,
   ORDER_TRANSITIONS,
 } from "@/lib/services/orders";
@@ -86,6 +87,7 @@ export default async function AdminOrdersPage({
     item === "all" ? statusCounts.all : (statusCounts.counts[item] ?? 0);
 
   const canUpdate = hasPermission(admin, "orders.update_status");
+  const canRefund = hasPermission(admin, "refunds.process");
   const baseQuery = hrefFor({ view: null }).split("?")[1] ?? "";
   const tableRows: OrderRow[] = result.rows.map((order) => ({
     id: order.id,
@@ -106,12 +108,20 @@ export default async function AdminOrdersPage({
     paymentMethod: order.paymentMethod,
   }));
   const transitions = detail ? ORDER_TRANSITIONS[detail.order.status as OrderStatus] : [];
-  const [customerSummary, previousOrderCount] = detail
+  const [customerSummary, previousOrderCount, detailRefunds] = detail
     ? await Promise.all([
         getCustomerPaidSummary(detail.customerId),
         countCustomerOtherOrders(detail.customerId, detail.order.id),
+        canRefund ? listOrderRefunds(detail.order.id) : Promise.resolve([]),
       ])
-    : [null, 0];
+    : [null, 0, []];
+  const refundedOrReserved = detailRefunds
+    .filter((refund) => refund.status !== "failed")
+    .reduce((sum, refund) => sum + Number(refund.amount), 0);
+  const refundableAmount = detail ? Math.max(0, Number(detail.order.total) - refundedOrReserved) : 0;
+  const canRefundDetail = Boolean(
+    detail && canRefund && detail.order.paidAt && refundableAmount > 0 && detail.order.status !== "refunded",
+  );
 
   const resetHref = status === "all" ? "/admin/orders" : `/admin/orders?status=${status}`;
   const rangeStart = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
@@ -119,10 +129,13 @@ export default async function AdminOrdersPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      <PageIdentity
         eyebrow="Order operations"
         title="Orders"
-        description={`${statusCounts.all.toLocaleString()} ${params.q ? "matching" : "total"} order${statusCounts.all === 1 ? "" : "s"} · Open quick view to verify details and act without leaving the queue.`}
+        description={`${statusCounts.all.toLocaleString()} ${params.q ? "matching" : "total"} order${statusCounts.all === 1 ? "" : "s"}. Review, fulfil, message and refund without losing your place in the queue.`}
+        icon={ShoppingBag}
+        tone="orange"
+        signal={pendingRefunds > 0 ? `${pendingRefunds} refund${pendingRefunds === 1 ? "" : "s"} need review` : "Queue live"}
       />
 
       {pendingRefunds > 0 && (
@@ -205,6 +218,8 @@ export default async function AdminOrdersPage({
           paidOrderCount={customerSummary?.count ?? 0}
           previousOrderCount={previousOrderCount}
           canUpdate={canUpdate}
+          canRefund={canRefundDetail}
+          refundableAmount={refundableAmount}
           transitions={transitions}
           closeHref={hrefFor({ view: null })}
         />

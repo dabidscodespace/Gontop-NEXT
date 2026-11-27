@@ -8,8 +8,8 @@ import {
   Users,
 } from "lucide-react";
 
-import { Card, PageHeader } from "@/components/admin/ui";
-import { SystemNav, WorkspaceNav } from "@/components/admin/workspace-nav";
+import { Card, PageIdentity } from "@/components/admin/ui";
+import { WorkspaceNav } from "@/components/admin/workspace-nav";
 import { CsvImportPanel } from "@/components/admin/csv-import-panel";
 import { CustomerMigrationPanel, OrderMigrationPanel } from "@/components/admin/data-migration-panel";
 import { NoAccess } from "@/components/admin/no-access";
@@ -36,13 +36,14 @@ export default async function AdminImportPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Controlled data tools"
+      <PageIdentity
+        eyebrow="Controlled import laboratory"
         title="Data migration"
-        description="Preview WooCommerce CSV data before writing it, import in a safe order, and see exactly what will be skipped."
+        description="A dedicated, preview-first environment for moving catalogue, customer and order history without mixing imports into everyday administration."
+        icon={FileCheck2}
+        tone="indigo"
+        signal="Preview required"
       />
-
-      <SystemNav admin={admin} active="migration" />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Step number="1" title="Products" description="Create the catalogue and package structure." active={view === "products"} />
@@ -54,6 +55,7 @@ export default async function AdminImportPage({
         label="Migration data type"
         active={view}
         compact
+        tone="indigo"
         items={[
           { key: "products", label: "Products", href: "/admin/import", icon: Package },
           { key: "customers", label: "Customers", href: "/admin/import?type=customers", icon: Users },

@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/action-form";
 import { CopyButton } from "@/components/admin/copy-button";
 import { DrawerBehavior, DrawerClose } from "@/components/admin/drawer-controls";
 import { AdminOverlayPortal } from "@/components/admin/overlay-portal";
+import { RefundModal } from "@/components/admin/refund-modal";
 import { btnPrimary, selectCls } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/status-badge";
 import type { OrderPaymentStatus, OrderStatus } from "@/db/schema";
@@ -33,6 +34,8 @@ export function OrderQuickView({
   paidOrderCount,
   previousOrderCount,
   canUpdate,
+  canRefund,
+  refundableAmount,
   transitions,
   closeHref,
 }: {
@@ -41,6 +44,8 @@ export function OrderQuickView({
   paidOrderCount: number;
   previousOrderCount: number;
   canUpdate: boolean;
+  canRefund: boolean;
+  refundableAmount: number;
   transitions: OrderStatus[];
   closeHref: string;
 }) {
@@ -253,10 +258,23 @@ export function OrderQuickView({
           </Section>
         </div>
 
-        <footer className="shrink-0 border-t border-gray-200 p-4">
-          <Link href={`/admin/orders/${order.id}`} className={cn(btnPrimary, "w-full justify-center")}>
-            Open full order <ArrowRight className="h-4 w-4" />
-          </Link>
+        <footer className="shrink-0 border-t border-gray-200 bg-gray-50/80 p-4">
+          <div className={cn("grid gap-2", canRefund && "sm:grid-cols-2")}>
+            {canRefund && (
+              <RefundModal
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+                customerName={detail.customerName || detail.customerEmail}
+                total={Number(order.total)}
+                remaining={refundableAmount}
+                triggerLabel="Refund"
+                triggerClassName="w-full"
+              />
+            )}
+            <Link href={`/admin/orders/${order.id}`} className={cn(btnPrimary, "w-full justify-center")}>
+              Open full order <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </footer>
       </aside>
     </AdminOverlayPortal>

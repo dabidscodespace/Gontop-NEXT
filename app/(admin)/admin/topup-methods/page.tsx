@@ -13,16 +13,15 @@ import {
 
 import { ActionForm } from "@/components/action-form";
 import {
-  btnSecondary,
+  btnOnDark,
   Card,
   EmptyState,
   Field,
   inputCls,
-  PageHeader,
+  PageIdentity,
   StatCard,
   textareaCls,
 } from "@/components/admin/ui";
-import { CommerceNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
@@ -48,14 +47,15 @@ export default async function AdminTopupMethodsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Checkout configuration"
+      <PageIdentity
+        eyebrow="Checkout field architecture"
         title="Top-up methods"
-        description="Define the customer account identifier a product or package asks for, such as UID, Login ID or Server."
-        actions={editing ? <Link href="/admin/topup-methods" className={btnSecondary}><Plus className="h-4 w-4" /> New method</Link> : undefined}
+        description="A focused schema library for UID, Login ID, Server and other customer identifiers—independent from the product catalogue itself."
+        icon={KeyRound}
+        tone="cyan"
+        signal={`${active} active method${active === 1 ? "" : "s"}`}
+        actions={editing ? <Link href="/admin/topup-methods" className={btnOnDark}><Plus className="h-4 w-4" /> New method</Link> : undefined}
       />
-
-      <CommerceNav admin={admin} active="methods" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="All methods" value={methods.length.toLocaleString()} hint="Saved identifier types" icon={KeyRound} tone="blue" />

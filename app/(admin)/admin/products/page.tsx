@@ -20,11 +20,13 @@ import { NoAccess } from "@/components/admin/no-access";
 import { ProductFilters } from "@/components/admin/product-filters";
 import { RowAction } from "@/components/admin/row-action";
 import {
+  btnOnDark,
+  btnOnDarkPrimary,
   btnPrimary,
   btnSecondary,
   Card,
   EmptyState,
-  PageHeader,
+  PageIdentity,
   Pagination,
 } from "@/components/admin/ui";
 import { getSession } from "@/lib/auth";
@@ -150,16 +152,19 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Catalogue operations"
+      <PageIdentity
+        eyebrow="Catalogue command centre"
         title="Products"
-        description="Find products quickly, resolve publishing issues, and manage packages without fighting the table."
+        description="Build, publish and merchandise the products customers buy. Lifecycle health and package management live in one catalogue-specific surface."
+        icon={Package}
+        tone="indigo"
+        signal={`${summary.published.toLocaleString()} published`}
         actions={
           <>
-            <a href="/api/admin/export/products" className={btnSecondary}>
+            <a href="/api/admin/export/products" className={btnOnDark}>
               <Download className="h-4 w-4" /> Export
             </a>
-            <Link href="/admin/products/new" className={btnPrimary}>
+            <Link href="/admin/products/new" className={btnOnDarkPrimary}>
               <Plus className="h-4 w-4" /> New product
             </Link>
           </>

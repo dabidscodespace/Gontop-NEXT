@@ -12,8 +12,7 @@ import {
 } from "lucide-react";
 
 import { ActionForm } from "@/components/action-form";
-import { Card, Field, inputCls, PageHeader } from "@/components/admin/ui";
-import { SystemNav } from "@/components/admin/workspace-nav";
+import { Card, Field, inputCls, PageIdentity } from "@/components/admin/ui";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
@@ -33,13 +32,14 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="System configuration"
-        title="Store settings"
-        description="Manage customer-facing identity, checkout limits, wallet availability and operational behavior from one controlled form."
+      <PageIdentity
+        eyebrow="Store control centre"
+        title="Settings"
+        description="The dedicated configuration surface for store identity, commercial limits, live features and deployment health."
+        icon={Settings2}
+        tone="slate"
+        signal={gatewayReady ? "Gateway connected" : "Gateway needs setup"}
       />
-
-      <SystemNav admin={admin} active="settings" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <SettingState label="Payment gateway" value={gatewayReady ? "Connected" : "Not configured"} good={gatewayReady} icon={CircleDollarSign} />

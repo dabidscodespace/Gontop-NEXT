@@ -18,7 +18,7 @@ import {
   btnSecondary,
   Card,
   EmptyState,
-  PageHeader,
+  PageIdentity,
   Pagination,
   SearchBar,
   selectCls,
@@ -26,7 +26,6 @@ import {
   tdCls,
   thCls,
 } from "@/components/admin/ui";
-import { CustomerMoneyNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { StatusBadge } from "@/components/status-badge";
 import { PAYMENT_STATUSES, type PaymentStatus } from "@/db/schema";
@@ -91,13 +90,14 @@ export default async function AdminPaymentsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Payment operations"
+      <PageIdentity
+        eyebrow="Payment ledger"
         title="Payments"
-        description="Trace every gateway charge or wallet deposit, follow it back to the customer, and re-check unsettled invoices safely."
+        description="A dedicated financial record of gateway charges and wallet deposits, with safe invoice verification and direct links to source records."
+        icon={CreditCard}
+        tone="blue"
+        signal={result.summary.needsVerification > 0 ? `${result.summary.needsVerification} need verification` : "Gateway records current"}
       />
-
-      <CustomerMoneyNav admin={admin} active="payments" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Completed volume" value={formatBDT(result.summary.completedAmount)} hint={`${result.summary.counts.completed.toLocaleString()} completed`} icon={CircleCheckBig} tone="emerald" href={hrefFor({ status: "completed" })} />

@@ -16,16 +16,15 @@ import {
 
 import { ActionForm } from "@/components/action-form";
 import {
-  btnSecondary,
+  btnOnDark,
   Card,
   EmptyState,
   Field,
   inputCls,
-  PageHeader,
+  PageIdentity,
   selectCls,
   StatCard,
 } from "@/components/admin/ui";
-import { SystemNav } from "@/components/admin/workspace-nav";
 import { NoAccess } from "@/components/admin/no-access";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS, type Permission } from "@/lib/permissions";
@@ -74,14 +73,15 @@ export default async function AdminAdminsPage({
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Access control"
+      <PageIdentity
+        eyebrow="Security & access"
         title="Team access"
-        description="Create staff accounts, assign only the permissions they need, and disable access without deleting audit history."
-        actions={editing ? <Link href="/admin/admins" className={btnSecondary}><UserPlus className="h-4 w-4" /> New staff account</Link> : undefined}
+        description="A dedicated identity and permission workspace for owners and moderators, isolated from store configuration."
+        icon={ShieldCheck}
+        tone="violet"
+        signal={`${admins.filter((item) => item.isActive).length} active staff`}
+        actions={editing ? <Link href="/admin/admins" className={btnOnDark}><UserPlus className="h-4 w-4" /> New staff account</Link> : undefined}
       />
-
-      <SystemNav admin={admin} active="team" />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Team accounts" value={admins.length.toLocaleString()} hint="Owners and moderators" icon={UsersRound} tone="blue" />

@@ -17,7 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { Card, PageHeader, StatCard, btnPrimary, btnSecondary } from "@/components/admin/ui";
+import { Card, PageIdentity, StatCard, btnOnDark, btnOnDarkPrimary } from "@/components/admin/ui";
 import { NoAccess } from "@/components/admin/no-access";
 import { StatusBadge } from "@/components/status-badge";
 import { getSession } from "@/lib/auth";
@@ -105,19 +105,22 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Operations overview"
+      <PageIdentity
+        eyebrow="Live operations overview"
         title={`${greeting}, ${firstName}`}
-        description={`${today} · Here’s what needs your attention across GONTOP.`}
+        description={`${today}. Your cross-store briefing highlights the queues, momentum and signals that matter now.`}
+        icon={TrendingUp}
+        tone="slate"
+        signal={`${stats.todayOrders.toLocaleString()} order${stats.todayOrders === 1 ? "" : "s"} today`}
         actions={
           <>
             {hasPermission(admin, "orders.view") && (
-              <Link href="/admin/orders" className={btnSecondary}>
+              <Link href="/admin/orders" className={btnOnDark}>
                 <ShoppingBag className="h-4 w-4" /> View orders
               </Link>
             )}
             {hasPermission(admin, "products.manage") && (
-              <Link href="/admin/products/new" className={btnPrimary}>
+              <Link href="/admin/products/new" className={btnOnDarkPrimary}>
                 <PackagePlus className="h-4 w-4" /> Add product
               </Link>
             )}
