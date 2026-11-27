@@ -5,6 +5,7 @@ import { addOrderNoteAction, updateOrderStatusAction } from "@/app/(admin)/admin
 import { ActionForm } from "@/components/action-form";
 import { CopyButton } from "@/components/admin/copy-button";
 import { DrawerBehavior, DrawerClose } from "@/components/admin/drawer-controls";
+import { AdminOverlayPortal } from "@/components/admin/overlay-portal";
 import { btnPrimary, selectCls } from "@/components/admin/ui";
 import { StatusBadge } from "@/components/status-badge";
 import type { OrderPaymentStatus, OrderStatus } from "@/db/schema";
@@ -50,18 +51,18 @@ export function OrderQuickView({
   const messages = detail.notes.filter((note) => note.customerVisible).slice().reverse();
 
   return (
-    <>
+    <AdminOverlayPortal>
       <DrawerBehavior closeHref={closeHref} />
       <DrawerClose
         href={closeHref}
         label="Close quick view"
-        className="fixed inset-0 z-40 bg-gray-950/45 backdrop-blur-[3px]"
+        className="fixed inset-0 z-[90] bg-gray-950/45 backdrop-blur-[3px]"
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={`Order #${order.orderNumber}`}
-        className="animate-slide-right fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-gray-200 bg-white text-gray-900 shadow-2xl sm:w-[38rem] sm:max-w-[calc(100vw-1rem)]"
+        className="animate-slide-right fixed inset-y-0 right-0 z-[100] flex w-full flex-col border-l border-gray-200 bg-white text-gray-900 shadow-2xl sm:w-[38rem] sm:max-w-[calc(100vw-1rem)]"
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-4">
           <div className="min-w-0">
@@ -258,7 +259,7 @@ export function OrderQuickView({
           </Link>
         </footer>
       </aside>
-    </>
+    </AdminOverlayPortal>
   );
 }
 
