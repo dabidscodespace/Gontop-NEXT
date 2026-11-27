@@ -277,7 +277,7 @@ export async function saveProductAction(_state: FormState, formData: FormData): 
     return {
       ok: true,
       message: id ? "Product updated." : "Product created. Opening package setup…",
-      redirectTo: id ? undefined : `/admin/products/${product.id}#packages`,
+      redirectTo: id ? undefined : `/admin/products/${product.id}?tab=packages`,
     };
   });
 }

@@ -18,7 +18,7 @@ export default async function EditProductPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ variation?: string }>;
+  searchParams: Promise<{ variation?: string; tab?: string }>;
 }) {
   const { admin } = await getSession();
   if (!admin) redirect("/admin/login");
@@ -42,6 +42,7 @@ export default async function EditProductPage({
       categories={categories}
       product={product}
       editingVariationId={query.variation ? Number(query.variation) : undefined}
+      initialTab={query.tab}
     />
   );
 }
