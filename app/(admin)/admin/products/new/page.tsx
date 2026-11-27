@@ -4,7 +4,7 @@ import { NoAccess } from "@/components/admin/no-access";
 import { ProductEditor } from "@/components/admin/product-editor";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { listGamesAdmin, listTopupMethodsAdmin } from "@/lib/services/admin-catalog";
+import { listCategoriesAdmin, listGamesAdmin, listTopupMethodsAdmin } from "@/lib/services/admin-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,11 @@ export default async function NewProductPage() {
   if (!admin) redirect("/admin/login");
   if (!hasPermission(admin, "products.manage")) return <NoAccess />;
 
-  const [games, topupMethods] = await Promise.all([listGamesAdmin(), listTopupMethodsAdmin()]);
+  const [games, topupMethods, categories] = await Promise.all([
+    listGamesAdmin(),
+    listTopupMethodsAdmin(),
+    listCategoriesAdmin(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -22,7 +26,7 @@ export default async function NewProductPage() {
           Create a game first so this product can be assigned to it.
         </div>
       )}
-      <ProductEditor games={games} topupMethods={topupMethods} product={null} />
+      <ProductEditor games={games} topupMethods={topupMethods} categories={categories} product={null} />
     </div>
   );
 }

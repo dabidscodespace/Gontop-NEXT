@@ -4,8 +4,12 @@ import { NoAccess } from "@/components/admin/no-access";
 import { ProductEditor } from "@/components/admin/product-editor";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { listGamesAdmin, listTopupMethodsAdmin } from "@/lib/services/admin-catalog";
-import { getProductById } from "@/lib/services/catalog";
+import {
+  getProductAdmin,
+  listCategoriesAdmin,
+  listGamesAdmin,
+  listTopupMethodsAdmin,
+} from "@/lib/services/admin-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +26,11 @@ export default async function EditProductPage({
 
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const productId = Number(id);
-  const [product, games, topupMethods] = await Promise.all([
-    Number.isFinite(productId) ? getProductById(productId) : Promise.resolve(null),
+  const [product, games, topupMethods, categories] = await Promise.all([
+    Number.isFinite(productId) ? getProductAdmin(productId) : Promise.resolve(null),
     listGamesAdmin(),
     listTopupMethodsAdmin(),
+    listCategoriesAdmin(),
   ]);
 
   if (!product) redirect("/admin/products");
@@ -34,6 +39,7 @@ export default async function EditProductPage({
     <ProductEditor
       games={games}
       topupMethods={topupMethods}
+      categories={categories}
       product={product}
       editingVariationId={query.variation ? Number(query.variation) : undefined}
     />

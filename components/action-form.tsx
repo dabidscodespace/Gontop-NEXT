@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 import { EMPTY_FORM_STATE, type FormState } from "@/lib/action-types";
@@ -16,6 +17,8 @@ export function ActionForm({
   buttonClassName,
   confirm,
   hideButton,
+  submitAside,
+  submitAreaClassName,
 }: {
   action: Action;
   children: React.ReactNode;
@@ -24,8 +27,30 @@ export function ActionForm({
   buttonClassName?: string;
   confirm?: string;
   hideButton?: boolean;
+  submitAside?: React.ReactNode;
+  submitAreaClassName?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.ok && state.redirectTo) router.replace(state.redirectTo);
+  }, [router, state.ok, state.redirectTo]);
+
+  const submitButton = (
+    <button
+      type="submit"
+      disabled={pending}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 rounded-xl bg-accent-orange px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
+        !submitAside && !submitAreaClassName && "mt-4",
+        buttonClassName,
+      )}
+    >
+      {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+      {pending ? "Saving..." : submitLabel}
+    </button>
+  );
 
   return (
     <form
@@ -55,19 +80,12 @@ export function ActionForm({
         </p>
       )}
 
-      {!hideButton && (
-        <button
-          type="submit"
-          disabled={pending}
-          className={cn(
-            "mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-accent-orange px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60",
-            buttonClassName,
-          )}
-        >
-          {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {pending ? "Saving..." : submitLabel}
-        </button>
-      )}
+      {!hideButton && (submitAside || submitAreaClassName ? (
+        <div className={cn("mt-4 flex flex-wrap items-center justify-end gap-3", submitAreaClassName)}>
+          {submitAside}
+          {submitButton}
+        </div>
+      ) : submitButton)}
     </form>
   );
 }

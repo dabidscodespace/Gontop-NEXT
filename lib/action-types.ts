@@ -49,6 +49,8 @@ export type FormState = {
   importedCustomers?: number;
   importedOrders?: number;
   skipped?: number;
+  /** Optional in-admin destination used after a successful create flow. */
+  redirectTo?: string;
 };
 
 

@@ -1,15 +1,15 @@
 "use client";
 
 import { startTransition, useActionState } from "react";
-import { Archive, Copy, Loader2, type LucideIcon } from "lucide-react";
+import { Archive, Copy, Loader2, Trash2, type LucideIcon } from "lucide-react";
 
 import { EMPTY_FORM_STATE, type FormState } from "@/lib/action-types";
 
 type RowActionFn = (state: FormState, formData: FormData) => Promise<FormState>;
 
 // Icons are passed by name: lucide components cannot cross the server/client boundary.
-const ICONS: Record<RowActionIcon, LucideIcon> = { copy: Copy, archive: Archive };
-type RowActionIcon = "copy" | "archive";
+const ICONS: Record<RowActionIcon, LucideIcon> = { copy: Copy, archive: Archive, trash: Trash2 };
+type RowActionIcon = "copy" | "archive" | "trash";
 
 /**
  * A per-row server action button. It lives outside any <form> so it can sit
@@ -22,6 +22,7 @@ export function RowAction({
   icon,
   className,
   confirm,
+  iconOnly = false,
 }: {
   action: RowActionFn;
   fields: Record<string, string>;
@@ -29,6 +30,7 @@ export function RowAction({
   icon: RowActionIcon;
   className?: string;
   confirm?: string;
+  iconOnly?: boolean;
 }) {
   const Icon = ICONS[icon];
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
@@ -42,8 +44,9 @@ export function RowAction({
 
   return (
     <span className="inline-flex max-w-56 flex-col items-end gap-1">
-      <button type="button" onClick={run} disabled={pending} className={className}>
-        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />} {label}
+      <button type="button" onClick={run} disabled={pending} className={className} aria-label={iconOnly ? label : undefined} title={iconOnly ? label : undefined}>
+        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
+        {!iconOnly && label}
       </button>
       {state.message && (
         <span role="status" className={`text-right text-xs ${state.ok ? "text-emerald-700" : "text-red-600"}`}>

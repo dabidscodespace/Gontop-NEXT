@@ -274,7 +274,11 @@ export async function saveProductAction(_state: FormState, formData: FormData): 
     revalidatePath("/");
     updateTag("storefront");
     revalidatePath(`/product/${input.slug}`);
-    return { ok: true, message: id ? "Product updated." : "Product created. Add packages next." };
+    return {
+      ok: true,
+      message: id ? "Product updated." : "Product created. Opening package setup…",
+      redirectTo: id ? undefined : `/admin/products/${product.id}#packages`,
+    };
   });
 }
 
@@ -307,7 +311,7 @@ export async function bulkUpdateProductsAction(_state: FormState, formData: Form
       const categoryInput = bulkProductCategorySchema.parse({
         mode: action.slice("category_".length),
         categoryId: formData.get("categoryId"),
-        ids: formData.getAll("ids"),
+        ids: [...new Set(formData.getAll("ids").map(Number))],
       });
       const categoryResult = await bulkAssignProductCategory(categoryInput, admin.id);
       await audit(admin.id, `product.bulk_category_${categoryInput.mode}`, "product", undefined, {
@@ -319,7 +323,7 @@ export async function bulkUpdateProductsAction(_state: FormState, formData: Form
     }
     const input = bulkProductActionSchema.parse({
       action: formData.get("action"),
-      ids: formData.getAll("ids"),
+      ids: [...new Set(formData.getAll("ids").map(Number))],
     });
     const result = await bulkUpdateProducts(input, admin.id);
     await audit(admin.id, `product.bulk_${input.action}`, "product", undefined, {
