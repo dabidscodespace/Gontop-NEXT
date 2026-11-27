@@ -212,14 +212,14 @@
 @keyframes admin-enter {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
+/* Keep this animation opacity-only: transformed page roots become containing
+   blocks for fixed drawers, trapping them inside the content column. */
 .admin-app main > div > * {
   animation: admin-enter 220ms ease-out both;
 }
